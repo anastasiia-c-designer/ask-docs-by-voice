@@ -1,6 +1,12 @@
 // Finds the text immediately preceding a cited quote on its page, so the UI can
 // show which section/model the quote belongs to. Matching is whitespace- and
 // punctuation-insensitive to line up with how quotes are verified.
+//
+// The displayed context also strips running headers/footers: within each file,
+// word sequences that repeat at the start or end of most pages (for example a
+// document title, or "Page X of Y") are treated as boilerplate and removed.
+// This is display-only and generic — it never touches the raw page text used
+// for citation verification.
 
 import type { ManualDocument } from "./types"
 
@@ -15,8 +21,103 @@ function escapeRegExp(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
-// Up to `maxChars` of the page text that comes right before `quote`, trimmed.
-// Returns "" when the page or quote can't be located.
+interface Boilerplate {
+  regexes: RegExp[]
+}
+
+// Cache boilerplate detection per documents array (identity is stable for a
+// loaded session) and per file name.
+const cache = new WeakMap<ManualDocument[], Map<string, Boilerplate>>()
+
+// Lowercase and collapse digit runs to "#" so page numbers compare as equal
+// ("Page 3 of 12" and "Page 4 of 12" share the same template).
+function normalizeToken(token: string): string {
+  return token.toLowerCase().replace(/\d+/g, "#")
+}
+
+// Build a regex from a normalized template token, allowing any digits where the
+// original had numbers.
+function tokenToPattern(normalized: string): string {
+  return escapeRegExp(normalized).replace(/#/g, "\\d+")
+}
+
+// Detect a repeated edge (header when fromStart, footer otherwise): the longest
+// run of up to 8 words whose normalized form is shared by most pages.
+function detectEdge(pageWordLists: string[][], fromStart: boolean): RegExp | null {
+  const pageCount = pageWordLists.length
+  if (pageCount < 3) return null
+  const threshold = Math.ceil(pageCount * 0.6)
+
+  for (let k = 8; k >= 2; k--) {
+    const counts = new Map<string, number>()
+    for (const words of pageWordLists) {
+      if (words.length < k) continue
+      const slice = fromStart ? words.slice(0, k) : words.slice(words.length - k)
+      const key = slice.map(normalizeToken).join(" ")
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+
+    let bestKey = ""
+    let bestCount = 0
+    for (const [key, count] of counts) {
+      if (count > bestCount) {
+        bestCount = count
+        bestKey = key
+      }
+    }
+
+    if (bestCount >= threshold && bestKey.replace(/[#\s]/g, "").length >= 3) {
+      const pattern = bestKey.split(" ").map(tokenToPattern).join("\\s+")
+      const anchored = fromStart ? `^\\s*${pattern}` : `${pattern}\\s*$`
+      try {
+        return new RegExp(anchored, "i")
+      } catch {
+        return null
+      }
+    }
+  }
+  return null
+}
+
+function boilerplateFor(documents: ManualDocument[], fileName: string): Boilerplate {
+  let byFile = cache.get(documents)
+  if (!byFile) {
+    byFile = new Map()
+    cache.set(documents, byFile)
+  }
+  const existing = byFile.get(fileName)
+  if (existing) return existing
+
+  const doc = documents.find((d) => d.fileName === fileName)
+  const regexes: RegExp[] = []
+
+  if (doc && doc.pages.length >= 3) {
+    const wordLists = doc.pages.map((p) => straighten(p.text).trim().split(/\s+/).filter(Boolean))
+    const header = detectEdge(wordLists, true)
+    const footer = detectEdge(wordLists, false)
+    if (header) regexes.push(header)
+    if (footer) regexes.push(footer)
+  }
+
+  // Generic page-number footer/header, always stripped.
+  regexes.push(/\bpage\s+\d+(?:\s+of\s+\d+)?\b/gi)
+
+  const result: Boilerplate = { regexes }
+  byFile.set(fileName, result)
+  return result
+}
+
+function stripBoilerplate(text: string, boilerplate: Boilerplate): string {
+  let out = text
+  for (const re of boilerplate.regexes) {
+    out = out.replace(re, " ")
+  }
+  return out.replace(/\s+/g, " ").trim()
+}
+
+// Up to `maxChars` of the page text that comes right before `quote`, trimmed and
+// with running headers/footers removed. Returns "" when the page or quote can't
+// be located.
 export function citationContextBefore(
   documents: ManualDocument[],
   fileName: string,
@@ -43,7 +144,8 @@ export function citationContextBefore(
   }
   if (!match) return ""
 
-  const before = haystack.slice(0, match.index).replace(/\s+$/, "")
+  const rawBefore = haystack.slice(0, match.index)
+  const before = stripBoilerplate(rawBefore, boilerplateFor(documents, fileName)).replace(/\s+$/, "")
   if (!before) return ""
 
   const truncated = before.length > maxChars
