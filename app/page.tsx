@@ -4,8 +4,17 @@ import { useState } from "react"
 import { DocumentUploader } from "@/components/document-uploader"
 import { QuestionInput } from "@/components/question-input"
 import { AnswerDisplay } from "@/components/answer-display"
-import { DebugPanel } from "@/components/debug-panel"
-import type { AnswerResult, ManualDocument, QaTurn, TokenUsage, AskResponse } from "@/lib/types"
+import { DebugPanel, type TestLogEntry } from "@/components/debug-panel"
+import { computeCostUsd } from "@/lib/config"
+import type {
+  AnswerResult,
+  AskResponse,
+  FailedAttempt,
+  ManualDocument,
+  QaTurn,
+  Timing,
+  TokenUsage,
+} from "@/lib/types"
 
 const MAX_HISTORY_TURNS = 6
 
@@ -17,44 +26,48 @@ export default function Page() {
   const [loading, setLoading] = useState(false)
 
   const [ingestionMs, setIngestionMs] = useState<number | null>(null)
-  const [serverMs, setServerMs] = useState<number | null>(null)
+  const [timing, setTiming] = useState<Timing | null>(null)
   const [usage, setUsage] = useState<TokenUsage | null>(null)
+  const [model, setModel] = useState<string | null>(null)
+  const [failedAttempt, setFailedAttempt] = useState<FailedAttempt | null>(null)
+  const [log, setLog] = useState<TestLogEntry[]>([])
+
+  function resetSession() {
+    setHistory([])
+    setResult(null)
+    setError(null)
+    setTiming(null)
+    setUsage(null)
+    setModel(null)
+    setFailedAttempt(null)
+    setLog([])
+  }
 
   function handleDocumentsReady(docs: ManualDocument[], ms: number) {
     setDocuments(docs)
     setIngestionMs(ms)
     // New documents start a fresh session.
-    setHistory([])
-    setResult(null)
-    setError(null)
-    setServerMs(null)
-    setUsage(null)
+    resetSession()
   }
 
   function handleReplace() {
     setDocuments([])
-    setHistory([])
-    setResult(null)
-    setError(null)
     setIngestionMs(null)
-    setServerMs(null)
-    setUsage(null)
+    resetSession()
   }
 
   async function handleAsk(question: string) {
     setLoading(true)
     setError(null)
     setResult(null)
+    setFailedAttempt(null)
 
-    const start = performance.now()
     try {
       const res = await fetch("/api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ documents, question, history: history.slice(-MAX_HISTORY_TURNS) }),
       })
-
-      setServerMs(performance.now() - start)
 
       if (!res.ok) {
         const data = await res.json().catch(() => null)
@@ -63,11 +76,39 @@ export default function Page() {
       }
 
       const data = (await res.json()) as AskResponse
+
       setResult({ status: data.status, answer: data.answer, citations: data.citations })
       setUsage(data.usage ?? null)
+      setTiming(data.timing)
+      setModel(data.model)
+      setFailedAttempt(data.failedAttempt ?? null)
       setHistory((prev) => [...prev, { question, answer: data.answer }].slice(-MAX_HISTORY_TURNS))
+
+      const costUsd =
+        data.usage && data.model
+          ? computeCostUsd(data.model, {
+              inputTokens: data.usage.inputTokens,
+              cachedInputTokens: data.usage.cachedInputTokens,
+              outputTokens: data.usage.outputTokens,
+            })
+          : null
+
+      const entry: TestLogEntry = {
+        question,
+        status: data.status,
+        answer: data.answer,
+        citations: data.citations,
+        verified: data.status !== "unverified",
+        attempts: data.timing.attempts,
+        totalMs: data.timing.totalMs,
+        openAiMs: data.timing.openAiMs,
+        inputTokens: data.usage?.inputTokens ?? 0,
+        cachedTokens: data.usage?.cachedInputTokens ?? 0,
+        outputTokens: data.usage?.outputTokens ?? 0,
+        costUsd,
+      }
+      setLog((prev) => [...prev, entry])
     } catch (err) {
-      setServerMs(performance.now() - start)
       setError(err instanceof Error ? err.message : "The request failed.")
     } finally {
       setLoading(false)
@@ -92,13 +133,18 @@ export default function Page() {
         onReplace={handleReplace}
       />
 
-      {hasDocuments && (
-        <QuestionInput onAsk={handleAsk} disabled={!hasDocuments} loading={loading} />
-      )}
+      {hasDocuments && <QuestionInput onAsk={handleAsk} disabled={!hasDocuments} loading={loading} />}
 
       <AnswerDisplay result={result} error={error} />
 
-      <DebugPanel ingestionMs={ingestionMs} serverMs={serverMs} usage={usage} />
+      <DebugPanel
+        ingestionMs={ingestionMs}
+        timing={timing}
+        usage={usage}
+        model={model}
+        failedAttempt={failedAttempt}
+        log={log}
+      />
     </main>
   )
 }

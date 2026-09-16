@@ -1,10 +1,50 @@
-// Central place to tune the model and the system prompt.
+// Central place to tune the model, reasoning effort, pricing, and the system prompt.
 // Keep these together so behavior is easy to change without touching route logic.
+// This file is safe to import from both server and client (no server-only APIs).
 
 export const DEFAULT_MODEL = "gpt-5.6-luna"
 
 export function getModel(): string {
   return process.env.OPENAI_MODEL || DEFAULT_MODEL
+}
+
+// Lowest supported reasoning effort keeps latency and cost down.
+// Set to an empty string to omit the parameter entirely (for models that
+// do not support a reasoning effort setting).
+export type ReasoningEffort = "minimal" | "low" | "medium" | "high" | ""
+
+export const REASONING_EFFORT: ReasoningEffort =
+  (process.env.OPENAI_REASONING_EFFORT as ReasoningEffort) || "minimal"
+
+// Prices in USD per 1,000,000 tokens.
+// OpenAI pricing page, checked 2026-09-16, Standard tier, short context
+export interface ModelPricing {
+  input: number
+  cachedInput: number
+  output: number
+}
+
+export const PRICING: Record<string, ModelPricing> = {
+  "gpt-5.6-luna": { input: 0.2, cachedInput: 0.02, output: 1.2 },
+  "gpt-5.6-terra": { input: 2.0, cachedInput: 0.2, output: 12.0 },
+}
+
+export interface CostUsage {
+  inputTokens: number
+  cachedInputTokens: number
+  outputTokens: number
+}
+
+// Returns cost in USD, or null when the active model has no price entry.
+export function computeCostUsd(model: string, usage: CostUsage): number | null {
+  const pricing = PRICING[model]
+  if (!pricing) return null
+  const nonCachedInput = Math.max(0, usage.inputTokens - usage.cachedInputTokens)
+  const perMillion =
+    nonCachedInput * pricing.input +
+    usage.cachedInputTokens * pricing.cachedInput +
+    usage.outputTokens * pricing.output
+  return perMillion / 1_000_000
 }
 
 export const SYSTEM_PROMPT = `You are "Ask your manual", an assistant that answers questions about equipment strictly from a set of uploaded manuals.

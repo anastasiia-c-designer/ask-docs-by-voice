@@ -32,7 +32,6 @@ export async function extractPdf(file: File): Promise<ManualDocument> {
     const page = await pdf.getPage(pageNumber)
     const content = await page.getTextContent()
     const text = content.items
-      // @ts-expect-error - pdf.js text items expose a `str` field at runtime
       .map((item) => ("str" in item ? item.str : ""))
       .join(" ")
       .replace(/\s+/g, " ")

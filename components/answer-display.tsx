@@ -11,12 +11,14 @@ const STATUS_LABELS: Record<AnswerStatus, string> = {
   answered: "Answered",
   not_found: "Not in documents",
   needs_clarification: "Needs clarification",
+  unverified: "Unverified",
 }
 
 const STATUS_CLASSES: Record<AnswerStatus, string> = {
   answered: "bg-primary text-primary-foreground",
   not_found: "bg-muted text-muted-foreground",
   needs_clarification: "bg-accent text-accent-foreground",
+  unverified: "bg-destructive/15 text-destructive ring-1 ring-inset ring-destructive/30",
 }
 
 interface AnswerDisplayProps {
