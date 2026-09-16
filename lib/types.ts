@@ -10,7 +10,7 @@ export interface ManualDocument {
   pages: DocumentPage[]
 }
 
-export type AnswerStatus = "answered" | "not_found" | "needs_clarification"
+export type AnswerStatus = "answered" | "not_found" | "needs_clarification" | "unverified"
 
 export interface Citation {
   fileName: string
@@ -24,19 +24,59 @@ export interface AnswerResult {
   citations: Citation[]
 }
 
+// Token counts summed across all model attempts for a single question.
+export interface TokenUsage {
+  inputTokens: number
+  cachedInputTokens: number
+  cacheWriteInputTokens: number
+  outputTokens: number
+  reasoningTokens: number
+}
+
+// Server-measured timing for a single question.
+export interface Timing {
+  totalMs: number
+  openAiMs: number
+  verificationMs: number
+  attempts: number
+}
+
+// A model attempt that failed verification. Shown only inside the debug panel.
+export interface FailedAttempt {
+  status: AnswerStatus
+  answer: string
+  citations: Citation[]
+  invalidReasons: string[]
+}
+
+// Response shape returned by POST /api/ask on success.
+export interface AskResponse extends AnswerResult {
+  model: string
+  reasoningEffort: string
+  usage: TokenUsage | null
+  timing: Timing
+  failedAttempt: FailedAttempt | null
+}
+
 export interface QaTurn {
   question: string
   answer: string
 }
 
-export interface TokenUsage {
-  inputTokens: number
-  outputTokens: number
+export type InputMode = "voice" | "text"
+
+// A single question/answer in the current session, for on-screen history.
+export interface ConversationTurn {
+  id: string
+  question: string
+  inputMode: InputMode
+  result: AnswerResult
 }
 
-// Response shape returned by POST /api/ask on success.
-export interface AskResponse extends AnswerResult {
-  usage: TokenUsage | null
+// Response shape returned by POST /api/transcribe.
+export interface TranscribeResponse {
+  transcript: string
+  model: string
 }
 
 export interface AskRequestBody {
