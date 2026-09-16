@@ -67,6 +67,85 @@ export function computeCostUsd(model: string, usage: CostUsage): number | null {
   return perMillion / 1_000_000
 }
 
+// Prompt caching mode.
+// "breakpoint" (default) places an explicit prompt-cache breakpoint at the end
+// of the stable documents block so that prefix is cached once and read back on
+// every later question about the same documents.
+// "off" disables prompt caching entirely (no cache key, no breakpoint) so no
+// cache writes are billed. Configurable via OPENAI_CACHE_MODE.
+export type CacheMode = "breakpoint" | "off"
+export const CACHE_MODE: CacheMode = process.env.OPENAI_CACHE_MODE === "off" ? "off" : "breakpoint"
+
+// Speech-to-text (transcription) model.
+export const DEFAULT_TRANSCRIBE_MODEL = "gpt-transcribe"
+export function getTranscribeModel(): string {
+  return process.env.OPENAI_TRANSCRIBE_MODEL || DEFAULT_TRANSCRIBE_MODEL
+}
+
+// Text-to-speech model, voice, and speaking style.
+export const DEFAULT_TTS_MODEL = "gpt-4o-mini-tts"
+export const DEFAULT_TTS_VOICE = "alloy"
+export const TTS_INSTRUCTIONS = "Speak calmly and clearly, like a helpful support agent."
+export function getTtsModel(): string {
+  return process.env.OPENAI_TTS_MODEL || DEFAULT_TTS_MODEL
+}
+export function getTtsVoice(): string {
+  return process.env.OPENAI_TTS_VOICE || DEFAULT_TTS_VOICE
+}
+
+// Audio pricing in USD per minute of audio.
+// OpenAI pricing, checked 2026-09-16.
+// Transcription is billed per minute of input (recorded) audio.
+// TTS is estimated per minute of generated audio.
+export const TRANSCRIBE_PRICING_PER_MIN: Record<string, number> = {
+  "gpt-transcribe": 0.0045,
+  "gpt-4o-mini-transcribe": 0.003,
+}
+export const TTS_PRICING_PER_MIN: Record<string, number> = {
+  "gpt-4o-mini-tts": 0.015, // estimated per generated audio minute
+}
+
+export function computeTranscriptionCostUsd(model: string, seconds: number): number | null {
+  const perMin = TRANSCRIBE_PRICING_PER_MIN[model]
+  if (perMin === undefined) return null
+  return (seconds / 60) * perMin
+}
+
+export function computeTtsCostUsd(model: string, seconds: number): number | null {
+  const perMin = TTS_PRICING_PER_MIN[model]
+  if (perMin === undefined) return null
+  return (seconds / 60) * perMin
+}
+
+// Distinctive terms to bias transcription toward: tokens that contain BOTH a
+// letter and a digit (e.g. model codes like "AP-400" or "R2D2"). Fully generic
+// and extracted automatically from whatever documents were uploaded — no
+// product-specific vocabulary.
+export function extractHintTerms(
+  documents: { pages: { text: string }[] }[],
+  max = 30,
+): string[] {
+  const seen = new Set<string>()
+  const terms: string[] = []
+  const tokenRe = /[A-Za-z0-9][A-Za-z0-9/.-]*/g
+  for (const doc of documents) {
+    for (const page of doc.pages) {
+      const matches = page.text.match(tokenRe)
+      if (!matches) continue
+      for (const raw of matches) {
+        const token = raw.replace(/[./-]+$/, "") // drop trailing separators
+        if (!/[A-Za-z]/.test(token) || !/[0-9]/.test(token)) continue
+        const key = token.toLowerCase()
+        if (seen.has(key)) continue
+        seen.add(key)
+        terms.push(token)
+        if (terms.length >= max) return terms
+      }
+    }
+  }
+  return terms
+}
+
 export const SYSTEM_PROMPT = `You are "Ask your manual", an assistant that answers questions about equipment strictly from a set of uploaded manuals.
 
 You are given one or more documents. Each document is introduced with a line "=== FILE: {fileName} ===". Within a file, each page's text is introduced with "[PAGE {n}]".

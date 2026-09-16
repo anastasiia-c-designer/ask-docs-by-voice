@@ -63,6 +63,22 @@ export interface QaTurn {
   answer: string
 }
 
+export type InputMode = "voice" | "text"
+
+// A single question/answer in the current session, for on-screen history.
+export interface ConversationTurn {
+  id: string
+  question: string
+  inputMode: InputMode
+  result: AnswerResult
+}
+
+// Response shape returned by POST /api/transcribe.
+export interface TranscribeResponse {
+  transcript: string
+  model: string
+}
+
 export interface AskRequestBody {
   documents: ManualDocument[]
   question: string

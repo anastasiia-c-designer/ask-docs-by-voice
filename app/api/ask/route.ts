@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { NextResponse } from "next/server"
 import OpenAI from "openai"
-import { SYSTEM_PROMPT, getModel, REASONING_EFFORT } from "@/lib/config"
+import { SYSTEM_PROMPT, getModel, REASONING_EFFORT, CACHE_MODE } from "@/lib/config"
 import { verifyAnswer } from "@/lib/verify"
 import type {
   AnswerResult,
@@ -119,20 +119,31 @@ export async function POST(request: Request) {
 
   // Prompt ordering for cache friendliness:
   // stable first (system instructions -> documents), changing last (history -> question).
+  // The documents live in their OWN content part with an explicit prompt-cache
+  // breakpoint at its end, so the stable prefix (system + documents) is cached
+  // and read back on every later question instead of only ever being written.
   const documentsBlock = buildDocumentsBlock(documents)
   const historyBlock = buildHistoryBlock(history ?? [])
   const questionBlock = `Question: ${question.trim()}`
   const promptCacheKey = documentsCacheKey(documents)
+  const useCache = CACHE_MODE === "breakpoint"
+
+  const userParts: OpenAI.Chat.ChatCompletionContentPartText[] = [
+    {
+      type: "text",
+      text: `Documents:\n${documentsBlock}`,
+      ...(useCache ? { prompt_cache_breakpoint: { mode: "explicit" as const } } : {}),
+    },
+    ...(historyBlock
+      ? [{ type: "text", text: historyBlock } as OpenAI.Chat.ChatCompletionContentPartText]
+      : []),
+    { type: "text", text: questionBlock },
+  ]
 
   // The base conversation. Retry appends a corrective message to this.
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
-    {
-      role: "user",
-      content: [`Documents:\n${documentsBlock}`, historyBlock, questionBlock]
-        .filter(Boolean)
-        .join("\n\n"),
-    },
+    { role: "user", content: userParts },
   ]
 
   const usageTotal: TokenUsage = {
@@ -160,7 +171,7 @@ export async function POST(request: Request) {
       completion = await client.chat.completions.create({
         model,
         messages,
-        prompt_cache_key: promptCacheKey,
+        ...(useCache ? { prompt_cache_key: promptCacheKey } : {}),
         ...(REASONING_EFFORT ? { reasoning_effort: REASONING_EFFORT } : {}),
         response_format: {
           type: "json_schema",
