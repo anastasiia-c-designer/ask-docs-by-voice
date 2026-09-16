@@ -28,31 +28,40 @@ function resolveReasoningEffort(): ReasoningEffort {
 export const REASONING_EFFORT: ReasoningEffort = resolveReasoningEffort()
 
 // Prices in USD per 1,000,000 tokens.
-// OpenAI pricing page, checked 2026-09-16, Standard tier, short context
+// OpenAI pricing page, checked 2026-09-16, Standard tier, short context.
+// For GPT-5.6 models, cache writes are billed at 1.25x the input price.
 export interface ModelPricing {
   input: number
   cachedInput: number
+  cacheWrite: number
   output: number
 }
 
 export const PRICING: Record<string, ModelPricing> = {
-  "gpt-5.6-luna": { input: 0.2, cachedInput: 0.02, output: 1.2 },
-  "gpt-5.6-terra": { input: 2.0, cachedInput: 0.2, output: 12.0 },
+  "gpt-5.6-luna": { input: 0.2, cachedInput: 0.02, cacheWrite: 0.25, output: 1.2 },
+  "gpt-5.6-terra": { input: 2.0, cachedInput: 0.2, cacheWrite: 2.5, output: 12.0 },
 }
 
 export interface CostUsage {
   inputTokens: number
   cachedInputTokens: number
+  cacheWriteTokens: number
   outputTokens: number
 }
 
 // Returns cost in USD, or null when the active model has no price entry.
+// input_tokens reported by the API is the full input count and already
+// includes cached and cache-write tokens, so uncached input is the remainder.
 export function computeCostUsd(model: string, usage: CostUsage): number | null {
   const pricing = PRICING[model]
   if (!pricing) return null
-  const nonCachedInput = Math.max(0, usage.inputTokens - usage.cachedInputTokens)
+  const uncachedInput = Math.max(
+    0,
+    usage.inputTokens - usage.cachedInputTokens - usage.cacheWriteTokens,
+  )
   const perMillion =
-    nonCachedInput * pricing.input +
+    uncachedInput * pricing.input +
+    usage.cacheWriteTokens * pricing.cacheWrite +
     usage.cachedInputTokens * pricing.cachedInput +
     usage.outputTokens * pricing.output
   return perMillion / 1_000_000

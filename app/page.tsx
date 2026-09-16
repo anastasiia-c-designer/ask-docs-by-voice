@@ -92,6 +92,7 @@ export default function Page() {
           ? computeCostUsd(data.model, {
               inputTokens: data.usage.inputTokens,
               cachedInputTokens: data.usage.cachedInputTokens,
+              cacheWriteTokens: data.usage.cacheWriteInputTokens,
               outputTokens: data.usage.outputTokens,
             })
           : null
@@ -107,6 +108,7 @@ export default function Page() {
         openAiMs: data.timing.openAiMs,
         inputTokens: data.usage?.inputTokens ?? 0,
         cachedTokens: data.usage?.cachedInputTokens ?? 0,
+        cacheWriteTokens: data.usage?.cacheWriteInputTokens ?? 0,
         outputTokens: data.usage?.outputTokens ?? 0,
         costUsd,
       }

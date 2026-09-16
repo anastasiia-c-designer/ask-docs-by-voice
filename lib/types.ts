@@ -28,6 +28,7 @@ export interface AnswerResult {
 export interface TokenUsage {
   inputTokens: number
   cachedInputTokens: number
+  cacheWriteInputTokens: number
   outputTokens: number
   reasoningTokens: number
 }

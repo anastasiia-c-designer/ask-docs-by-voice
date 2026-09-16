@@ -16,6 +16,7 @@ export interface TestLogEntry {
   openAiMs: number
   inputTokens: number
   cachedTokens: number
+  cacheWriteTokens: number
   outputTokens: number
   costUsd: number | null
 }
@@ -50,6 +51,7 @@ const HEADER_CELLS = [
   "OpenAI ms",
   "Input tokens",
   "Cached tokens",
+  "Cache write tokens",
   "Output tokens",
   "Cost USD",
 ]
@@ -80,6 +82,7 @@ function rowFor(entry: TestLogEntry): string {
     entry.openAiMs.toFixed(0),
     String(entry.inputTokens),
     String(entry.cachedTokens),
+    String(entry.cacheWriteTokens),
     String(entry.outputTokens),
     formatCost(entry.costUsd),
   ].join(" | ")} |`
@@ -132,6 +135,7 @@ export function DebugPanel({
       ? computeCostUsd(model, {
           inputTokens: usage.inputTokens,
           cachedInputTokens: usage.cachedInputTokens,
+          cacheWriteTokens: usage.cacheWriteInputTokens,
           outputTokens: usage.outputTokens,
         })
       : null
@@ -150,6 +154,7 @@ export function DebugPanel({
         <Metric label="Attempts" value={timing ? String(timing.attempts) : "—"} />
         <Metric label="Input tokens" value={usage ? String(usage.inputTokens) : "—"} />
         <Metric label="Cached input" value={usage ? String(usage.cachedInputTokens) : "—"} />
+        <Metric label="Cache write" value={usage ? String(usage.cacheWriteInputTokens) : "—"} />
         <Metric label="Output tokens" value={usage ? String(usage.outputTokens) : "—"} />
         <Metric label="Reasoning tokens" value={usage ? String(usage.reasoningTokens) : "—"} />
         <Metric

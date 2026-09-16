@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import { NextResponse } from "next/server"
 import OpenAI from "openai"
 import { SYSTEM_PROMPT, getModel, REASONING_EFFORT } from "@/lib/config"
@@ -45,6 +46,20 @@ const ANSWER_SCHEMA = {
 
 const UNVERIFIED_ANSWER =
   "I found something that might answer this, but I couldn't verify it against the document, so I won't state it."
+
+// Stable hash of the loaded documents (file names plus page texts) so that
+// every question about the same documents shares one prompt_cache_key.
+// Nothing here changes between questions, so the cache key stays constant.
+function documentsCacheKey(documents: ManualDocument[]): string {
+  const hash = createHash("sha256")
+  for (const doc of documents) {
+    hash.update(`FILE:${doc.fileName}\n`)
+    for (const page of doc.pages) {
+      hash.update(`PAGE:${page.pageNumber}\n${page.text}\n`)
+    }
+  }
+  return `manual-docs-${hash.digest("hex").slice(0, 32)}`
+}
 
 function buildDocumentsBlock(documents: ManualDocument[]): string {
   return documents
@@ -107,6 +122,7 @@ export async function POST(request: Request) {
   const documentsBlock = buildDocumentsBlock(documents)
   const historyBlock = buildHistoryBlock(history ?? [])
   const questionBlock = `Question: ${question.trim()}`
+  const promptCacheKey = documentsCacheKey(documents)
 
   // The base conversation. Retry appends a corrective message to this.
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
@@ -123,6 +139,7 @@ export async function POST(request: Request) {
     inputTokens: 0,
     outputTokens: 0,
     cachedInputTokens: 0,
+    cacheWriteInputTokens: 0,
     reasoningTokens: 0,
   }
   let sawUsage = false
@@ -143,6 +160,7 @@ export async function POST(request: Request) {
       completion = await client.chat.completions.create({
         model,
         messages,
+        prompt_cache_key: promptCacheKey,
         ...(REASONING_EFFORT ? { reasoning_effort: REASONING_EFFORT } : {}),
         response_format: {
           type: "json_schema",
@@ -159,9 +177,15 @@ export async function POST(request: Request) {
     const u = completion.usage
     if (u) {
       sawUsage = true
+      // Chat Completions reports cache counts under prompt_tokens_details.
+      // cache_write_tokens is not in the SDK's type yet, so read it defensively.
+      const promptDetails = u.prompt_tokens_details as
+        | { cached_tokens?: number; cache_write_tokens?: number }
+        | undefined
       usageTotal.inputTokens += u.prompt_tokens ?? 0
       usageTotal.outputTokens += u.completion_tokens ?? 0
-      usageTotal.cachedInputTokens += u.prompt_tokens_details?.cached_tokens ?? 0
+      usageTotal.cachedInputTokens += promptDetails?.cached_tokens ?? 0
+      usageTotal.cacheWriteInputTokens += promptDetails?.cache_write_tokens ?? 0
       usageTotal.reasoningTokens += u.completion_tokens_details?.reasoning_tokens ?? 0
     }
 
