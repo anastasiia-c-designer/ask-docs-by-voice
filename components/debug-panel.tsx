@@ -25,6 +25,7 @@ interface DebugPanelProps {
   timing: Timing | null
   usage: TokenUsage | null
   model: string | null
+  reasoningEffort: string | null
   failedAttempt: FailedAttempt | null
   log: TestLogEntry[]
 }
@@ -114,7 +115,15 @@ function CopyButton({ label, getText }: { label: string; getText: () => string }
   )
 }
 
-export function DebugPanel({ ingestionMs, timing, usage, model, failedAttempt, log }: DebugPanelProps) {
+export function DebugPanel({
+  ingestionMs,
+  timing,
+  usage,
+  model,
+  reasoningEffort,
+  failedAttempt,
+  log,
+}: DebugPanelProps) {
   const hasData = ingestionMs !== null || timing !== null || usage !== null || log.length > 0
   if (!hasData) return null
 
@@ -143,7 +152,10 @@ export function DebugPanel({ ingestionMs, timing, usage, model, failedAttempt, l
         <Metric label="Cached input" value={usage ? String(usage.cachedInputTokens) : "—"} />
         <Metric label="Output tokens" value={usage ? String(usage.outputTokens) : "—"} />
         <Metric label="Reasoning tokens" value={usage ? String(usage.reasoningTokens) : "—"} />
-        <Metric label="Model" value={model ?? "—"} />
+        <Metric
+          label="Model"
+          value={model ? `${model} · effort: ${reasoningEffort ?? "none"}` : "—"}
+        />
         <Metric label="Cost / question" value={usage ? formatCost(cost) : "—"} />
       </dl>
 

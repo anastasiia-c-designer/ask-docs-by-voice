@@ -51,6 +51,7 @@ export interface FailedAttempt {
 // Response shape returned by POST /api/ask on success.
 export interface AskResponse extends AnswerResult {
   model: string
+  reasoningEffort: string
   usage: TokenUsage | null
   timing: Timing
   failedAttempt: FailedAttempt | null

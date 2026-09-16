@@ -29,6 +29,7 @@ export default function Page() {
   const [timing, setTiming] = useState<Timing | null>(null)
   const [usage, setUsage] = useState<TokenUsage | null>(null)
   const [model, setModel] = useState<string | null>(null)
+  const [reasoningEffort, setReasoningEffort] = useState<string | null>(null)
   const [failedAttempt, setFailedAttempt] = useState<FailedAttempt | null>(null)
   const [log, setLog] = useState<TestLogEntry[]>([])
 
@@ -39,6 +40,7 @@ export default function Page() {
     setTiming(null)
     setUsage(null)
     setModel(null)
+    setReasoningEffort(null)
     setFailedAttempt(null)
     setLog([])
   }
@@ -81,6 +83,7 @@ export default function Page() {
       setUsage(data.usage ?? null)
       setTiming(data.timing)
       setModel(data.model)
+      setReasoningEffort(data.reasoningEffort ?? null)
       setFailedAttempt(data.failedAttempt ?? null)
       setHistory((prev) => [...prev, { question, answer: data.answer }].slice(-MAX_HISTORY_TURNS))
 
@@ -142,6 +145,7 @@ export default function Page() {
         timing={timing}
         usage={usage}
         model={model}
+        reasoningEffort={reasoningEffort}
         failedAttempt={failedAttempt}
         log={log}
       />

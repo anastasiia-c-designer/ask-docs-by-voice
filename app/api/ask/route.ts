@@ -193,6 +193,7 @@ export async function POST(request: Request) {
         answer: result.answer,
         citations: result.citations,
         model,
+        reasoningEffort: REASONING_EFFORT || "none",
         usage: sawUsage ? usageTotal : null,
         timing: {
           totalMs: performance.now() - requestStart,
@@ -236,6 +237,7 @@ export async function POST(request: Request) {
     answer: UNVERIFIED_ANSWER,
     citations: [],
     model,
+    reasoningEffort: REASONING_EFFORT || "none",
     usage: sawUsage ? usageTotal : null,
     timing: {
       totalMs: performance.now() - requestStart,

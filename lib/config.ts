@@ -8,13 +8,24 @@ export function getModel(): string {
   return process.env.OPENAI_MODEL || DEFAULT_MODEL
 }
 
-// Lowest supported reasoning effort keeps latency and cost down.
+// Supported reasoning-effort values for the current model. Only send one of
+// these — the API rejects anything else (e.g. "minimal" is not supported here).
+// "none" keeps latency and cost down; bump to "low" if answer quality drops.
 // Set to an empty string to omit the parameter entirely (for models that
 // do not support a reasoning effort setting).
-export type ReasoningEffort = "minimal" | "low" | "medium" | "high" | ""
+export type ReasoningEffort = "none" | "low" | "medium" | "high" | "xhigh" | ""
 
-export const REASONING_EFFORT: ReasoningEffort =
-  (process.env.OPENAI_REASONING_EFFORT as ReasoningEffort) || "minimal"
+const SUPPORTED_REASONING_EFFORTS: ReasoningEffort[] = ["none", "low", "medium", "high", "xhigh", ""]
+
+function resolveReasoningEffort(): ReasoningEffort {
+  const fromEnv = process.env.OPENAI_REASONING_EFFORT as ReasoningEffort | undefined
+  if (fromEnv !== undefined && SUPPORTED_REASONING_EFFORTS.includes(fromEnv)) {
+    return fromEnv
+  }
+  return "none"
+}
+
+export const REASONING_EFFORT: ReasoningEffort = resolveReasoningEffort()
 
 // Prices in USD per 1,000,000 tokens.
 // OpenAI pricing page, checked 2026-09-16, Standard tier, short context
