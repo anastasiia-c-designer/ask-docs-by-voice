@@ -1,0 +1,20 @@
+Session A:
+| Question | Status | Answer | Citations | Verified | Attempts | Total ms | OpenAI ms | Input tokens | Cached tokens | Cache write tokens | Output tokens | Cost USD |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Which model needs a new HEPA filter less often? | answered | The AP-400 needs a new HEPA filter less often: every 8 months, compared with every 6 months for the AP-200. | brisa-manual-v1.pdf p.6: Replace the HEPA filter of the AP-200 every 6 months. Replace the HEPA filter of the AP-400 every 8 months. | yes | 1 | 2029 | 2027 | 1817 | 0 | 1814 | 97 | 0.00057 |
+| Can I run the AP-400 on Turbo all night? | answered | No. AP-400 Turbo mode stops automatically after 2 hours and cannot be turned on again for 30 minutes; during that pause, it runs in Auto mode. | brisa-manual-v1.pdf p.5: Exception: on the AP-400, Turbo mode stops automatically after 2 hours of continuous use. Turbo mode cannot be turned on again for 30 minutes. During this pause the AP-400 runs in Auto mode. | yes | 1 | 1830 | 1828 | 1876 | 0 | 1873 | 115 | 0.00061 |
+| How much does the AP-400 weigh? | not_found | The documents do not state how much the AP-400 weighs. | — | yes | 1 | 2387 | 2386 | 1927 | 0 | 1924 | 32 | 0.00052 |
+| What's the noise level of the AP-200... sorry, I mean the AP-400, at max speed? | answered | The AP-400’s noise level at maximum speed is 52 dB. | brisa-manual-v1.pdf p.4: Noise level: 22 dB in Sleep mode, 52 dB at maximum speed. | yes | 1 | 2094 | 2089 | 1971 | 0 | 1968 | 72 | 0.00058 |
+| How long is the warranty? | answered | The warranty lasts 2 years from the date of purchase. | brisa-warranty.pdf p.1: Both the AP-200 and the AP-400 are covered by a warranty of 2 years from the date of purchase. | yes | 1 | 2012 | 2010 | 2001 | 0 | 1998 | 72 | 0.00059 |
+| Will the AP-400 get rid of cigarette smoke smell? | not_found | The documents do not cover whether the AP-400 removes cigarette smoke smell. | — | yes | 1 | 1333 | 1332 | 2033 | 0 | 2030 | 34 | 0.00055 |
+
+Session B:
+| Question | Status | Answer | Citations | Verified | Attempts | Total ms | OpenAI ms | Input tokens | Cached tokens | Cache write tokens | Output tokens | Cost USD |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| How long does setup take? | needs_clarification | Which model do you mean: the AP-200 or the AP-400? | — | yes | 1 | 8612 | 8611 | 1812 | 0 | 1809 | 38 | 0.00050 |
+
+Session C:
+| Question | Status | Answer | Citations | Verified | Attempts | Total ms | OpenAI ms | Input tokens | Cached tokens | Cache write tokens | Output tokens | Cost USD |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| How often should I replace the AP-400 HEPA filter? | answered | Replace the AP-400 HEPA filter every 6 months. | brisa-manual-v2.pdf p.6: Replace the HEPA filter of the AP-400 every 6 months. | yes | 1 | 1411 | 1410 | 1819 | 0 | 1816 | 65 | 0.00053 |
+| Which model needs a new HEPA filter less often? | answered | Neither model; both the AP-200 and AP-400 need a new HEPA filter every 6 months. | brisa-manual-v2.pdf p.6: Replace the HEPA filter of the AP-200 every 6 months. Replace the HEPA filter of the AP-400 every 6 months. | yes | 1 | 1931 | 1930 | 1860 | 0 | 1857 | 90 | 0.00057 |
