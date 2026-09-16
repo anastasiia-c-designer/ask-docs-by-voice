@@ -66,3 +66,13 @@ Fill in after testing. Run each question 3 times.
 - PDF text extraction breaks long sentences across lines. Quote verification must normalise whitespace before matching.
 - Each PDF page starts with a running footer text (document title, "Page X of Y") in the extracted text.
 - Specifications are written as sentences, not as a table, so text extraction keeps the reading order.
+
+## Upload limit tests
+
+Expected outcomes were defined in planning before these tests were run. Run on the deployed app, each from a clean state.
+
+| # | Upload | Expected | Actual | Pass |
+|---|---|---|---|---|
+| E1 | `test-docs-edge/scanned-manual.pdf` (image-only pages, no text layer) | Rejected as scanned, nothing loaded | "scanned-manual.pdf" looks like a scanned PDF. Only text-based PDFs are supported. | ✓ |
+| E2 | `test-docs-edge/long-manual-11-pages.pdf` | Rejected, over 10-page limit | Too many pages: 11. The maximum is 10 pages across all files. | ✓ |
+| E3 | manual-v1 + warranty + scanned-manual (3 files at once) | Rejected, over 2-file limit | You can upload at most 2 PDF files. | ✓ |
