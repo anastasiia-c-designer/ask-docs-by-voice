@@ -41,6 +41,17 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+
+  /* New brand tokens (see spec). --brand is the spec's --accent (links, quote
+     border, recording, highlights); --brand-soft is --accent-soft. */
+  --color-ink: var(--ink);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-user-bubble: var(--user-bubble);
+  --color-surface: var(--surface);
+
+  --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -52,44 +63,60 @@
 
 :root {
   color-scheme: light;
-  /* Warm off-white background, near-black text, one calm teal accent. */
-  --background: oklch(0.985 0.006 83);
-  --foreground: oklch(0.235 0.006 60);
-  --card: oklch(0.998 0.004 83);
-  --card-foreground: oklch(0.235 0.006 60);
-  --popover: oklch(0.998 0.004 83);
-  --popover-foreground: oklch(0.235 0.006 60);
-  --primary: oklch(0.55 0.082 217);
-  --primary-foreground: oklch(0.99 0.005 210);
-  --secondary: oklch(0.955 0.006 83);
-  --secondary-foreground: oklch(0.32 0.01 60);
-  --muted: oklch(0.955 0.006 83);
-  --muted-foreground: oklch(0.53 0.008 60);
-  --accent: oklch(0.945 0.021 214);
-  --accent-foreground: oklch(0.36 0.055 217);
-  --destructive: oklch(0.55 0.19 27);
-  --destructive-foreground: oklch(0.99 0.01 27);
-  --success: oklch(0.55 0.088 157);
-  --success-foreground: oklch(0.99 0.01 157);
-  --warning: oklch(0.66 0.115 74);
-  --warning-foreground: oklch(0.28 0.04 74);
-  --border: oklch(0.905 0.005 83);
-  --input: oklch(0.905 0.005 83);
-  --ring: oklch(0.55 0.082 217);
-  --chart-1: oklch(0.55 0.082 217);
-  --chart-2: oklch(0.55 0.088 157);
-  --chart-3: oklch(0.66 0.115 74);
-  --chart-4: oklch(0.53 0.008 60);
-  --chart-5: oklch(0.235 0.006 60);
+
+  /* Brand palette (hex per the redesign spec). */
+  --ink: #0e2a3b;
+  --brand: #6d5df6;
+  --brand-soft: #ece9fe;
+  --user-bubble: #e2dcff;
+  --surface: #ffffff;
+
+  /* shadcn semantic tokens mapped onto the brand palette so existing utility
+     classes (bg-card, text-foreground, border-border, bg-muted, …) adopt it. */
+  --background: #f7f6fb;
+  --foreground: #0e2a3b;
+  --card: #ffffff;
+  --card-foreground: #0e2a3b;
+  --popover: #ffffff;
+  --popover-foreground: #0e2a3b;
+  /* Primary = ink (primary buttons, composer mic/send). */
+  --primary: #0e2a3b;
+  --primary-foreground: #ffffff;
+  --secondary: #f1eff8;
+  --secondary-foreground: #0e2a3b;
+  --muted: #f1eff8;
+  --muted-foreground: #6b6880;
+  /* shadcn "accent" = subtle accent background = brand-soft; its foreground is
+     the brand color. */
+  --accent: #ece9fe;
+  --accent-foreground: #6d5df6;
+  /* "Couldn't verify" — soft, readable red on white. */
+  --destructive: #c0362c;
+  --destructive-foreground: #ffffff;
+  /* Verified — #1F7A55 text on #E6F4EC (chip bg applied in component). */
+  --success: #1f7a55;
+  --success-foreground: #ffffff;
+  /* "Need one detail" — amber, readable on white. */
+  --warning: #c2740b;
+  --warning-foreground: #7a4a08;
+  --border: #e6e3f0;
+  --input: #e6e3f0;
+  --ring: #6d5df6;
+  --chart-1: #6d5df6;
+  --chart-2: #1f7a55;
+  --chart-3: #c2740b;
+  --chart-4: #6b6880;
+  --chart-5: #0e2a3b;
   --radius: 0.75rem;
-  --sidebar: oklch(0.985 0.006 83);
-  --sidebar-foreground: oklch(0.235 0.006 60);
-  --sidebar-primary: oklch(0.55 0.082 217);
-  --sidebar-primary-foreground: oklch(0.99 0.005 210);
-  --sidebar-accent: oklch(0.945 0.021 214);
-  --sidebar-accent-foreground: oklch(0.36 0.055 217);
-  --sidebar-border: oklch(0.905 0.005 83);
-  --sidebar-ring: oklch(0.55 0.082 217);
+  /* Sidebar sits slightly darker than the app background. */
+  --sidebar: #f1eff8;
+  --sidebar-foreground: #0e2a3b;
+  --sidebar-primary: #0e2a3b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e9e6f3;
+  --sidebar-accent-foreground: #0e2a3b;
+  --sidebar-border: #e6e3f0;
+  --sidebar-ring: #6d5df6;
 }
 
 .dark {
@@ -135,8 +162,14 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
+}
+
+/* Empty state only: a soft vertical wash from lavender at the top down to the
+   flat app background, with a faint pink tint near the bottom. */
+.empty-gradient {
+  background: linear-gradient(180deg, #eeeaff 0%, #f7f6fb 58%, #f6e8f6 100%);
 }
 
 /* Equalizer bars for the "speaking" state. */

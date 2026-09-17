@@ -351,7 +351,7 @@ export function VoiceControls({
           onClick={stop}
           aria-pressed
           aria-label="Stop recording"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand text-primary-foreground transition-opacity hover:opacity-90"
         >
           <Square className="size-5 fill-current" />
         </button>
@@ -407,7 +407,7 @@ export function VoiceControls({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-2 pl-4">
+    <div className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-2 pl-4 shadow-[0_2px_10px_rgba(14,42,59,0.06)]">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {phase === "idle" && (
           <>
@@ -439,7 +439,7 @@ export function VoiceControls({
               {bars.map((b, i) => (
                 <span
                   key={i}
-                  className="w-[3px] shrink-0 rounded-full bg-primary"
+                  className="w-[3px] shrink-0 rounded-full bg-brand"
                   style={{
                     height: `${Math.max(12, Math.round(b * 100))}%`,
                     transition: reducedMotion ? undefined : "height 90ms linear",
@@ -467,7 +467,7 @@ export function VoiceControls({
               {[0, 1, 2, 3].map((i) => (
                 <span
                   key={i}
-                  className={reducedMotion ? "block w-0.5 rounded-full bg-primary" : "eq-bar block w-0.5 rounded-full bg-primary"}
+                  className={reducedMotion ? "block w-0.5 rounded-full bg-brand" : "eq-bar block w-0.5 rounded-full bg-brand"}
                   style={{ height: 14, animationDelay: `${i * 140}ms` }}
                 />
               ))}

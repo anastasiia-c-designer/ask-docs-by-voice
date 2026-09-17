@@ -39,7 +39,7 @@ export function ChatSidebar({ chats, activeId, onSelect, onNewChat }: ChatSideba
         <button
           type="button"
           onClick={onNewChat}
-          className="flex w-full items-center gap-2 rounded-lg border border-sidebar-border bg-sidebar px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          className="flex w-full items-center gap-2 rounded-lg border border-sidebar-border bg-card px-3 py-2 text-sm font-medium text-sidebar-foreground shadow-sm transition-colors hover:bg-sidebar-accent"
         >
           <Plus className="size-4" aria-hidden />
           New chat
@@ -61,10 +61,10 @@ export function ChatSidebar({ chats, activeId, onSelect, onNewChat }: ChatSideba
                   onClick={() => onSelect(chat.id)}
                   aria-current={active ? "true" : undefined}
                   className={[
-                    "flex w-full min-w-0 flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-colors",
+                    "flex w-full min-w-0 flex-col gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors",
                     active
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50",
+                      ? "border-sidebar-border bg-card text-sidebar-foreground shadow-sm"
+                      : "border-transparent text-sidebar-foreground hover:bg-sidebar-accent/60",
                   ].join(" ")}
                 >
                   <span title={chat.title} className="w-full min-w-0 truncate text-sm font-medium">
@@ -72,8 +72,7 @@ export function ChatSidebar({ chats, activeId, onSelect, onNewChat }: ChatSideba
                   </span>
                   <span
                     className={[
-                      "w-full min-w-0 truncate text-xs",
-                      active ? "text-sidebar-accent-foreground/80" : "text-muted-foreground",
+                      "w-full min-w-0 truncate text-xs text-muted-foreground",
                     ].join(" ")}
                   >
                     {summaryLine(chat.documentCount, chat.questionCount)}

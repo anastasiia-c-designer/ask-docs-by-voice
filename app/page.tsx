@@ -427,7 +427,7 @@ export default function Page() {
             type="button"
             onClick={() => setDrawerOpen(true)}
             aria-label="Open menu"
-            className="rounded-md p-1.5 text-foreground transition-colors hover:bg-muted"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted"
           >
             <Menu className="size-5" />
           </button>
@@ -435,13 +435,14 @@ export default function Page() {
           <span className="truncate text-sm font-medium text-foreground">{activeChat.title}</span>
         </header>
 
-        <main className="relative flex flex-1 flex-col">
+        <main className={`relative flex flex-1 flex-col ${!hasDocuments ? "empty-gradient" : ""}`}>
           {!hasDocuments ? (
             <div className="mx-auto flex w-full max-w-[640px] flex-1 flex-col items-center justify-center px-4 py-12">
               <div className="flex flex-col items-center gap-4 text-center">
                 <LogoMark className="size-12" />
-                <h1 className="text-2xl font-semibold tracking-tight text-balance">
-                  Ask your manual out loud
+                <h1 className="text-[26px] leading-tight tracking-tight text-balance md:text-[32px]">
+                  <span className="block font-light text-foreground">Ask your manual</span>
+                  <span className="block font-bold text-foreground">out loud.</span>
                 </h1>
                 <p className="max-w-md text-sm leading-relaxed text-muted-foreground text-pretty">
                   Upload up to 2 text-based PDFs, 10 pages total. Every answer comes with the exact
