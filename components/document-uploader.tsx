@@ -4,6 +4,7 @@ import { useRef, useState } from "react"
 import { Upload, FileText, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { extractPdf, countPages, ScannedPdfError } from "@/lib/pdf"
+import { Tooltip } from "@/components/tooltip"
 import type { ManualDocument } from "@/lib/types"
 
 const MAX_FILES = 2
@@ -113,15 +114,16 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
             </span>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={onReplace}
-          aria-label="Replace documents"
-          title="Replace documents"
-          className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <RefreshCw className="size-4" />
-        </button>
+        <Tooltip label="Replace documents" className="shrink-0">
+          <button
+            type="button"
+            onClick={onReplace}
+            aria-label="Replace documents"
+            className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <RefreshCw className="size-4" />
+          </button>
+        </Tooltip>
       </div>
     )
   }

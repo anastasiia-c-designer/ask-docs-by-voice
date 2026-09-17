@@ -50,27 +50,29 @@ export function ChatSidebar({ chats, activeId, onSelect, onNewChat }: ChatSideba
         <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Chats</span>
       </div>
 
-      <nav aria-label="Chats" className="min-h-0 flex-1 overflow-y-auto px-3 pb-2">
-        <ul className="flex flex-col gap-1">
+      <nav aria-label="Chats" className="min-h-0 min-w-0 flex-1 overflow-y-auto px-3 pb-2">
+        <ul className="flex min-w-0 flex-col gap-1">
           {chats.map((chat) => {
             const active = chat.id === activeId
             return (
-              <li key={chat.id}>
+              <li key={chat.id} className="w-full overflow-hidden">
                 <button
                   type="button"
                   onClick={() => onSelect(chat.id)}
                   aria-current={active ? "true" : undefined}
                   className={[
-                    "flex w-full flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-colors",
+                    "flex w-full min-w-0 flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-colors",
                     active
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
                       : "text-sidebar-foreground hover:bg-sidebar-accent/50",
                   ].join(" ")}
                 >
-                  <span className="truncate text-sm font-medium">{chat.title}</span>
+                  <span title={chat.title} className="w-full min-w-0 truncate text-sm font-medium">
+                    {chat.title}
+                  </span>
                   <span
                     className={[
-                      "truncate text-xs",
+                      "w-full min-w-0 truncate text-xs",
                       active ? "text-sidebar-accent-foreground/80" : "text-muted-foreground",
                     ].join(" ")}
                   >
