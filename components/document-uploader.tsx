@@ -13,7 +13,12 @@ const SAMPLE_FILES = ["/samples/brisa-manual-v1.pdf", "/samples/brisa-warranty.p
 
 interface DocumentUploaderProps {
   documents: ManualDocument[]
-  onDocumentsReady: (documents: ManualDocument[], ingestionMs: number, title: string) => void
+  onDocumentsReady: (
+    documents: ManualDocument[],
+    ingestionMs: number,
+    title: string,
+    fromSample: boolean,
+  ) => void
   onReplace: () => void
 }
 
@@ -22,7 +27,7 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function ingest(files: File[]) {
+  async function ingest(files: File[], fromSample = false) {
     setError(null)
 
     if (files.length > MAX_FILES) {
@@ -54,7 +59,7 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
 
       const ingestionMs = performance.now() - start
       // Chat title comes from the first loaded file.
-      onDocumentsReady(parsed, ingestionMs, extracted[0]?.title ?? "")
+      onDocumentsReady(parsed, ingestionMs, extracted[0]?.title ?? "", fromSample)
     } catch (err) {
       if (err instanceof ScannedPdfError) {
         setError(`${err.message} Try exporting it as a text-based PDF.`)
@@ -87,8 +92,9 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
           return new File([blob], name, { type: "application/pdf" })
         }),
       )
-      // Hand off to the exact same ingestion pipeline as a user upload.
-      await ingest(files)
+      // Hand off to the exact same ingestion pipeline as a user upload, but flag
+      // it as sample-loaded so the page can show the starter questions.
+      await ingest(files, true)
     } catch (err) {
       console.error("[v0] Sample manual load failed:", err)
       setError("Couldn’t load the sample manuals. Please try again or upload your own PDF.")
@@ -157,6 +163,10 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
             Try sample manuals
           </button>
         </div>
+
+        <p className="text-center text-xs text-muted-foreground text-pretty">
+          Two sample manuals for a fictional air purifier (AP-200 and AP-400).
+        </p>
 
         <input
           ref={inputRef}
