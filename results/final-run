@@ -2,7 +2,7 @@
 
 - Date: 17 Sep 2026, evening (Kyiv time)
 - App: deployed version at https://ask-your-manual-app.vercel.app
-- Browser / device: [впиши]
+- Browser / device: opera version: 135.0.5973.92 / macbook 13-inch, M3, 2024
 - Model: gpt-5.6-luna, reasoning effort none; transcription gpt-transcribe; TTS gpt-4o-mini-tts
 
 ## Summary
@@ -19,13 +19,27 @@
 - Session C, first attempt: "Transcription failed" in the third chat of one tab. Not reproduced.
 
 ## Session A
-[встав лог]
+| Question | Input | Status | Answer | Citations | Verified | Attempts | Total ms | OpenAI ms | Input tokens | Cached tokens | Cache write tokens | Output tokens | Model cost USD | Recording s | Transcription ms | Ask ms | TTS ms | Q-to-audio ms | Transcription USD | TTS USD (est) | Total cost USD |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| What's the recommended room size for AP200? | voice | answered | The recommended room size for the AP-200 is up to 20 square meters. | brisa-manual-v1.pdf p.4: AP-200 Recommended room size: up to 20 sq m. | yes | 1 | 2953 | 2952 | 1815 | 0 | 1812 | 68 | 0.00054 | 4.54 | 2840 | 3553 | 2699 | 9095 | 0.00034 | 0.00110 | 0.00198 |
+| And what about the other model? | voice | answered | The recommended room size for the AP-400 is up to 45 square meters. | brisa-manual-v1.pdf p.4: AP-400 Recommended room size: up to 45 sq m. | yes | 1 | 3528 | 3527 | 1855 | 1801 | 51 | 68 | 0.00013 | 2.70 | 2731 | 4607 | 1896 | 9236 | 0.00020 | 0.00153 | 0.00186 |
+| Which model needs a new HEPA filter less often? | voice | answered | The AP-400 needs a new HEPA filter less often: every 8 months, compared with every 6 months for the AP-200. | brisa-manual-v1.pdf p.6: Replace the HEPA filter of the AP-200 every 6 months. Replace the HEPA filter of the AP-400 every 8 months. | yes | 1 | 2600 | 2598 | 1891 | 1801 | 87 | 97 | 0.00017 | 4.37 | 2471 | 3486 | 2562 | 8520 | 0.00033 | 0.00200 | 0.00251 |
+| Can I run the AP400 on turbo all night? | voice | answered | No. The AP-400’s Turbo mode stops automatically after 2 hours, then it runs in Auto mode for 30 minutes before Turbo can be turned on again. | brisa-manual-v1.pdf p.5: on the AP-400, Turbo mode stops automatically after 2 hours of continuous use. Turbo mode cannot be turned on again for 30 minutes. During this pause the AP-400 runs in Auto mode. | yes | 1 | 1557 | 1556 | 1940 | 1801 | 136 | 113 | 0.00021 | 4.23 | 2319 | 2655 | 2306 | 7282 | 0.00032 | 0.00295 | 0.00348 |
+| How much does the AP 400 weigh? | voice | not_found | The documents do not cover how much the AP-400 weighs. | — | yes | 1 | 1762 | 1760 | 1991 | 1801 | 187 | 32 | 0.00012 | 4.11 | 1756 | 2460 | 1434 | 5653 | 0.00031 | 0.00112 | 0.00155 |
+| What the noise level of the AP 200? Oh, sorry, I mean the AP 400 at max speed. | voice | answered | The AP-400’s noise level at maximum speed is 52 dB. | brisa-manual-v1.pdf p.4: Noise level: 22 dB in Sleep mode, 52 dB at maximum speed. | yes | 1 | 2843 | 2842 | 2036 | 1801 | 232 | 72 | 0.00018 | 9.17 | 2493 | 3911 | 2030 | 8436 | 0.00069 | 0.00143 | 0.00230 |
+| How long is the warranty? | voice | answered | Both the AP-200 and AP-400 have a two-year warranty from the date of purchase. | brisa-warranty.pdf p.1: Both the AP-200 and the AP-400 are covered by a warranty of 2 years from the date of purchase. | yes | 1 | 1326 | 1324 | 2066 | 1801 | 262 | 80 | 0.00020 | 2.43 | 1815 | 2023 | 2272 | 6112 | 0.00018 | 0.00155 | 0.00193 |
+| Will the AP400 get rid of cigarette smoke smell? | voice | not_found | The documents do not cover whether the AP-400 removes cigarette smoke smell. | — | yes | 1 | 1193 | 1192 | 2071 | 1801 | 267 | 34 | 0.00014 | 4.89 | 2078 | 2250 | 1954 | 6284 | 0.00037 | 0.00127 | 0.00178 |
 
 ## Session B
-[встав лог]
+| Question | Input | Status | Answer | Citations | Verified | Attempts | Total ms | OpenAI ms | Input tokens | Cached tokens | Cache write tokens | Output tokens | Model cost USD | Recording s | Transcription ms | Ask ms | TTS ms | Q-to-audio ms | Transcription USD | TTS USD (est) | Total cost USD |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| How long does setup take? | voice | needs_clarification | Which model do you mean: the AP-200 or the AP-400? | — | yes | 1 | 1678 | 1677 | 1812 | 1801 | 8 | 38 | 0.00008 | 3.19 | 1422 | 2343 | 1942 | 5708 | 0.00024 |  | 0.00032 |
 
 ## Session C
-[встав лог сесії C з задеплоєного сайту]
+| Question | Input | Status | Answer | Citations | Verified | Attempts | Total ms | OpenAI ms | Input tokens | Cached tokens | Cache write tokens | Output tokens | Model cost USD | Recording s | Transcription ms | Ask ms | TTS ms | Q-to-audio ms | Transcription USD | TTS USD (est) | Total cost USD |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| How often should I replace the AP400 HEPA filter? | voice | answered | Replace the AP-400 HEPA filter every 6 months. | brisa-manual-v2.pdf p.6: Replace the HEPA filter of the AP-400 every 6 months. | yes | 1 | 2176 | 2174 | 1818 | 0 | 1815 | 65 | 0.00053 | 5.27 | 2288 | 2488 | 11400 | 16180 | 0.00040 | 0.00114 | 0.00207 |
+| Which model needs a new HEPA filter less often? | voice | answered | Neither model; both the AP-200 and AP-400 need their HEPA filters replaced every 6 months. | brisa-manual-v2.pdf p.6: Replace the HEPA filter of the AP-200 every 6 months. Replace the HEPA filter of the AP-400 every 6 months. | yes | 1 | 1694 | 1692 | 1858 | 1801 | 54 | 90 | 0.00016 | 4.21 | 1420 | 1917 | 1122 | 4461 | 0.00032 | 0.00202 | 0.00249 |
 
 ## Upload limit tests
 | # | Upload | Result |
