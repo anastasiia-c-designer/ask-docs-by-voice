@@ -378,6 +378,10 @@ export default function Page() {
   }
 
   const hasDocuments = documents.length > 0
+  // Centered "start" layout: documents are loaded but no question has been asked
+  // yet. Flips to the normal bottom-pinned layout the moment the first turn
+  // appears, driving the composer slide + heading/glow fade.
+  const isStartState = hasDocuments && turns.length === 0
   // Starter pills: only for sample-loaded chats, and only before the first turn.
   const showSuggestions = hasDocuments && activeChat.fromSample && turns.length === 0
   const logEntries = turns
@@ -507,26 +511,55 @@ export default function Page() {
               </div>
 
               <div className="mx-auto w-full max-w-[720px] flex-1 px-4 pt-6 pb-40">
-                {turns.length === 0 ? (
-                  <p className="py-16 text-center text-sm text-muted-foreground text-pretty">
-                    Tap the mic below and ask your first question.
-                  </p>
-                ) : (
+                {turns.length > 0 && (
                   <Conversation turns={turns} documents={documents} onPlay={handlePlay} />
                 )}
 
                 <div ref={bottomRef} />
               </div>
 
-              <div className="fixed inset-x-0 bottom-0 z-20 bg-background/95 backdrop-blur md:left-[260px]">
-                {/* Fade from the scrolling conversation into the composer. */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-0 -top-8 h-8 bg-gradient-to-b from-transparent to-background"
-                />
-                <div className="mx-auto max-w-[720px] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              <div
+                className={`fixed inset-x-0 bottom-0 z-20 transition-transform duration-300 ease-out md:left-[260px] ${
+                  isStartState
+                    ? "translate-y-[calc(-50svh+50%)]"
+                    : "translate-y-0 bg-background/95 backdrop-blur"
+                }`}
+              >
+                {/* Fade from the scrolling conversation into the composer. Only
+                    when there is scrollable content behind it (normal state). */}
+                {!isStartState && (
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 -top-8 h-8 bg-gradient-to-b from-transparent to-background"
+                  />
+                )}
+                <div className="relative mx-auto max-w-[720px] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                  {/* Soft, wide lavender glow behind the centered composer. Fades
+                      out with the heading once the first question is sent. */}
+                  <div
+                    aria-hidden
+                    className={`pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[340px] w-[680px] max-w-[130vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl transition-opacity duration-300 ease-out ${
+                      isStartState ? "opacity-25" : "opacity-0"
+                    }`}
+                    style={{ background: "radial-gradient(closest-side, var(--accent-strong), transparent)" }}
+                  />
+                  {/* Start-state heading sitting directly above the composer;
+                      fades out as the composer slides to the bottom. */}
+                  <div
+                    aria-hidden={!isStartState}
+                    className={`absolute inset-x-0 bottom-full mb-6 flex flex-col items-center gap-1 px-4 text-center transition-opacity duration-300 ease-out ${
+                      isStartState ? "opacity-100" : "pointer-events-none opacity-0"
+                    }`}
+                  >
+                    <h2 className="text-[22px] font-medium leading-tight tracking-tight text-foreground text-balance md:text-[26px]">
+                      Ready when you are
+                    </h2>
+                    <p className="text-sm text-muted-foreground text-pretty">
+                      Ask about <span className="font-medium text-foreground/90">{activeChat.title}</span>
+                    </p>
+                  </div>
                   {showSuggestions && (
-                    <div className="mb-3 flex flex-wrap gap-2">
+                    <div className="mb-3 flex flex-wrap justify-center gap-2">
                       {SAMPLE_QUESTIONS.map((q) => (
                         <button
                           key={q}
