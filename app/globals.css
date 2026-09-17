@@ -108,8 +108,8 @@
   --chart-4: #6b6880;
   --chart-5: #0e2a3b;
   --radius: 0.75rem;
-  /* Sidebar sits slightly darker than the app background. */
-  --sidebar: #f1eff8;
+  /* Sidebar is white with a subtle brand-tinted border. */
+  --sidebar: #ffffff;
   --sidebar-foreground: #0e2a3b;
   --sidebar-primary: #0e2a3b;
   --sidebar-primary-foreground: #ffffff;
