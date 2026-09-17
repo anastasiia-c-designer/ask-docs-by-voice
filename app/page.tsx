@@ -391,24 +391,33 @@ export default function Page() {
     questionCount: c.turns.length,
   }))
 
+  // The product shell (sidebar + mobile menu) is revealed the first time any
+  // chat has documents, and stays revealed for the rest of the session — even
+  // after "New chat" shows the empty state again, or documents are replaced.
+  const sidebarRevealedRef = useRef(false)
+  if (chats.some((c) => c.documents.length > 0)) sidebarRevealedRef.current = true
+  const sidebarVisible = sidebarRevealedRef.current
+
   const externalPhase: ExternalPhase = speech.speaking ? "speaking" : loading ? "thinking" : "idle"
 
   return (
     <div className="flex min-h-svh bg-background">
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-svh w-[260px] shrink-0 border-r border-sidebar-border bg-sidebar md:flex">
-        <ChatSidebar
-          chats={chatSummaries}
-          activeId={activeId}
-          onSelect={selectChat}
-          onNewChat={newChat}
-          logEntries={logEntries}
-          ingestionMs={ingestionMs}
-        />
-      </aside>
+      {sidebarVisible && (
+        <aside className="sticky top-0 hidden h-svh w-[260px] shrink-0 border-r border-sidebar-border bg-sidebar md:flex">
+          <ChatSidebar
+            chats={chatSummaries}
+            activeId={activeId}
+            onSelect={selectChat}
+            onNewChat={newChat}
+            logEntries={logEntries}
+            ingestionMs={ingestionMs}
+          />
+        </aside>
+      )}
 
       {/* Mobile slide-in drawer */}
-      {drawerOpen && (
+      {sidebarVisible && drawerOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
             className="absolute inset-0 bg-foreground/40"
@@ -438,26 +447,35 @@ export default function Page() {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* Compact mobile header */}
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur md:hidden">
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Open menu"
-            className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted"
-          >
-            <Menu className="size-5" />
-          </button>
-          <LogoMark className="size-6 shrink-0" />
-          <span className="truncate text-sm font-medium text-foreground">{activeChat.title}</span>
-        </header>
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        {sidebarVisible ? (
+          /* Compact mobile header with menu button (mobile only) */
+          <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur md:hidden">
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Open menu"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted"
+            >
+              <Menu className="size-5" />
+            </button>
+            <LogoMark className="size-6 shrink-0" />
+            <span className="truncate text-sm font-medium text-foreground">{activeChat.title}</span>
+          </header>
+        ) : (
+          /* First-visit header: logo mark + wordmark, not clickable, overlaid
+             top-left on both desktop and mobile until the sidebar appears. */
+          <header className="absolute left-0 top-0 z-30 flex items-center gap-2 px-4 py-3 md:px-6 md:py-4">
+            <LogoMark className="size-7 shrink-0" />
+            <span className="text-base font-semibold tracking-tight text-foreground">Pagewise</span>
+          </header>
+        )}
 
         <main className={`relative flex flex-1 flex-col ${!hasDocuments ? "empty-gradient" : ""}`}>
           {!hasDocuments ? (
             <div className="mx-auto flex w-full max-w-[640px] flex-1 flex-col items-center justify-center px-4 pt-12 pb-[calc(3rem+16vh)]">
               <div className="flex flex-col items-center gap-4 text-center">
-                <LogoMark className="size-12" />
+                {sidebarVisible && <LogoMark className="size-12" />}
                 <h1 className="text-[26px] leading-tight tracking-tight text-balance md:text-[32px]">
                   <span className="block font-light text-foreground">Ask your manual</span>
                   <span className="block font-bold text-foreground">out loud.</span>
