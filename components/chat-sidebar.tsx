@@ -61,10 +61,10 @@ export function ChatSidebar({ chats, activeId, onSelect, onNewChat }: ChatSideba
                   onClick={() => onSelect(chat.id)}
                   aria-current={active ? "true" : undefined}
                   className={[
-                    "flex w-full min-w-0 flex-col gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors",
+                    "flex w-full min-w-0 flex-col gap-0.5 rounded-lg border border-transparent px-3 py-2 text-left transition-colors",
                     active
-                      ? "border-sidebar-border bg-card text-sidebar-foreground shadow-sm"
-                      : "border-transparent text-sidebar-foreground hover:bg-sidebar-accent/60",
+                      ? "bg-brand-soft text-sidebar-foreground"
+                      : "text-sidebar-foreground hover:bg-background",
                   ].join(" ")}
                 >
                   <span title={chat.title} className="w-full min-w-0 truncate text-sm font-medium">
