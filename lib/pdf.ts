@@ -1,14 +1,31 @@
 "use client"
 
-import * as pdfjsLib from "pdfjs-dist"
 import type { ManualDocument, DocumentPage } from "./types"
 
-// Point pdf.js at its worker. Bundled via a module URL so it works in the browser
-// without copying files into /public.
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url,
-).toString()
+// pdf.js is loaded lazily (dynamic import) the first time a PDF is parsed, never
+// at page load. Two reasons:
+//  1. It must not run at module-eval time — a bug in the PDF library must never
+//     crash the whole page (e.g. Safari, where the modern build references the
+//     ES Iterator Helpers global that Safari does not implement).
+//  2. We use the "legacy" build (pdfjs-dist/legacy/build/...), which is
+//     transpiled and polyfilled for wider browser support (older Safari/iOS).
+type PdfJsModule = typeof import("pdfjs-dist/legacy/build/pdf.mjs")
+
+let pdfjsPromise: Promise<PdfJsModule> | null = null
+
+async function loadPdfJs(): Promise<PdfJsModule> {
+  if (!pdfjsPromise) {
+    pdfjsPromise = (async () => {
+      const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs")
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+        "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
+        import.meta.url,
+      ).toString()
+      return pdfjsLib
+    })()
+  }
+  return pdfjsPromise
+}
 
 // A page with fewer than this many non-whitespace characters is treated as
 // having no meaningful extractable text (likely a scanned image).
@@ -22,6 +39,7 @@ export class ScannedPdfError extends Error {
 }
 
 export async function extractPdf(file: File): Promise<ManualDocument> {
+  const pdfjsLib = await loadPdfJs()
   const buffer = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise
 

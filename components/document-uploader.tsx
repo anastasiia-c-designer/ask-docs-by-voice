@@ -63,7 +63,9 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
       if (err instanceof ScannedPdfError) {
         setError(`${err.message} Try exporting it as a text-based PDF.`)
       } else {
-        setError(err instanceof Error ? err.message : "Failed to read the PDF. Try another file.")
+        // Never surface a raw JS error to the user; log the technical detail.
+        console.error("[v0] PDF ingestion failed:", err)
+        setError("Couldn’t read this PDF in this browser. Try another browser or file.")
       }
     } finally {
       setLoading(false)
@@ -91,7 +93,8 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
       )
       // Hand off to the exact same ingestion pipeline as a user upload.
       await ingest(files)
-    } catch {
+    } catch (err) {
+      console.error("[v0] Sample manual load failed:", err)
       setError("Couldn’t load the sample manuals. Please try again or upload your own PDF.")
       setLoading(false)
     }
