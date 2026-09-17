@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react"
 import { Upload, FileText, RefreshCw } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { extractPdf, countPages, ScannedPdfError } from "@/lib/pdf"
 import { Tooltip } from "@/components/tooltip"
 import type { ManualDocument } from "@/lib/types"
@@ -119,7 +118,7 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
             type="button"
             onClick={onReplace}
             aria-label="Replace documents"
-            className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <RefreshCw className="size-4" />
           </button>
@@ -137,7 +136,7 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={loading}
-          className="flex w-full flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card px-4 py-12 text-center transition-colors hover:border-ring hover:bg-accent/40 disabled:opacity-60"
+          className="flex w-full flex-col items-center gap-2 rounded-[16px] border border-dashed border-border bg-card px-4 py-12 text-center transition-colors hover:border-ring hover:bg-accent/40 disabled:opacity-60"
         >
           <Upload className="size-6 text-primary" aria-hidden />
           <span className="text-sm font-medium text-foreground">
@@ -149,9 +148,14 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
         </button>
 
         <div className="flex items-center justify-center">
-          <Button variant="outline" size="sm" onClick={loadSamples} disabled={loading}>
+          <button
+            type="button"
+            onClick={loadSamples}
+            disabled={loading}
+            className="rounded-full bg-brand-soft px-4 py-2 text-sm font-medium text-brand transition-colors hover:bg-brand-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+          >
             Try sample manuals
-          </Button>
+          </button>
         </div>
 
         <input

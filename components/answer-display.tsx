@@ -60,7 +60,7 @@ export function AnswerDisplay({ turn, documents, onPlay }: AnswerDisplayProps) {
           {inputMode === "voice" && (
             <Mic className="size-4 shrink-0 text-muted-foreground" aria-label="Voice question" />
           )}
-          <div className="rounded-2xl rounded-br-sm bg-muted px-3.5 py-2 text-sm leading-relaxed text-foreground text-pretty">
+          <div className="rounded-[18px] rounded-br-[6px] bg-user-bubble px-3.5 py-2 text-sm leading-relaxed text-foreground text-pretty">
             {question}
           </div>
         </div>
@@ -176,7 +176,7 @@ function IconAction({
         onClick={onClick}
         aria-label={label}
         aria-expanded={expanded}
-        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-brand-soft hover:text-foreground"
       >
         {children}
       </button>
@@ -252,10 +252,10 @@ function CitationCard({
   }, [open])
 
   return (
-    <li>
+    <li className="rounded-[14px] border border-border bg-card p-3">
       <span
         className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${
-          verified ? "border-success/30 bg-success/10 text-success" : "border-border bg-card text-muted-foreground"
+          verified ? "border-success/30 bg-success/10 text-success" : "border-border bg-background text-muted-foreground"
         }`}
       >
         {verified && <CheckCircle2 className="size-3" aria-hidden />}
@@ -265,7 +265,7 @@ function CitationCard({
       {context && (
         <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{context}</p>
       )}
-      <blockquote className="mt-1.5 border-l-2 border-primary bg-primary/5 py-1.5 pl-3 text-sm leading-relaxed text-foreground">
+      <blockquote className="mt-1.5 border-l-[3px] border-brand bg-brand/5 py-1.5 pl-3 text-sm leading-relaxed text-foreground">
         {citation.quote}
       </blockquote>
 
@@ -273,17 +273,17 @@ function CitationCard({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="mt-1.5 text-xs font-medium text-primary transition-colors hover:underline"
+        className="mt-1.5 text-xs font-medium text-brand transition-colors hover:underline"
       >
         {open ? "Hide full page" : "Show full page"}
       </button>
 
       {open && highlight && (
-        <div className="mt-2 max-h-60 overflow-y-auto rounded-md border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
+        <div className="mt-2 max-h-60 overflow-y-auto rounded-md border border-border bg-background p-3 text-xs leading-relaxed text-muted-foreground">
           {highlight.matchStart >= 0 ? (
             <>
               {highlight.text.slice(0, highlight.matchStart)}
-              <span ref={markRef} className="rounded bg-primary/15 px-0.5 text-foreground">
+              <span ref={markRef} className="rounded bg-brand-soft px-0.5 text-foreground">
                 {highlight.text.slice(highlight.matchStart, highlight.matchEnd)}
               </span>
               {highlight.text.slice(highlight.matchEnd)}
