@@ -142,7 +142,7 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={loading}
-          className="flex w-full flex-col items-center gap-2 rounded-[16px] border border-dashed border-border bg-card px-4 py-12 text-center transition-colors hover:border-ring hover:bg-accent/40 disabled:opacity-60"
+          className="flex w-full flex-col items-center gap-2 rounded-[16px] border border-dashed border-border bg-card px-4 py-6 text-center transition-colors hover:border-ring hover:bg-accent/40 disabled:opacity-60"
         >
           <Upload className="size-6 text-primary" aria-hidden />
           <span className="text-sm font-medium text-foreground">
@@ -163,10 +163,6 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
             Try sample manuals
           </button>
         </div>
-
-        <p className="text-center text-xs text-muted-foreground text-pretty">
-          Two sample manuals for a fictional air purifier (AP-200 and AP-400).
-        </p>
 
         <input
           ref={inputRef}

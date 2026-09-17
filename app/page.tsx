@@ -455,7 +455,7 @@ export default function Page() {
 
         <main className={`relative flex flex-1 flex-col ${!hasDocuments ? "empty-gradient" : ""}`}>
           {!hasDocuments ? (
-            <div className="mx-auto flex w-full max-w-[640px] flex-1 flex-col items-center justify-center px-4 py-12">
+            <div className="mx-auto flex w-full max-w-[640px] flex-1 flex-col items-center justify-center px-4 pt-12 pb-[calc(3rem+16vh)]">
               <div className="flex flex-col items-center gap-4 text-center">
                 <LogoMark className="size-12" />
                 <h1 className="text-[26px] leading-tight tracking-tight text-balance md:text-[32px]">
