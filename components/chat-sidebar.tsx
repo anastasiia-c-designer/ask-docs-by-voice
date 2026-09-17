@@ -14,6 +14,10 @@ export interface ChatSummary {
   id: string
   title: string
   documentCount: number
+  // True once documents have been loaded into this chat at least once. Used to
+  // decide whether the chat list shows — it must not disappear when a chat's
+  // documents are cleared via "Replace documents".
+  everHadDocuments: boolean
 }
 
 interface ChatSidebarProps {
@@ -37,8 +41,9 @@ export function ChatSidebar({
   logEntries,
   ingestionMs,
 }: ChatSidebarProps) {
-  // The Chats section stays hidden until at least one chat has loaded documents.
-  const anyDocuments = chats.some((c) => c.documentCount > 0)
+  // The Chats section shows once any chat has ever loaded documents, and stays
+  // shown afterward — clearing a chat's documents (Replace) must not hide it.
+  const anyChats = chats.some((c) => c.everHadDocuments)
 
   // Only one row is ever in an interactive sub-state at a time.
   const [menuId, setMenuId] = useState<string | null>(null)
@@ -94,7 +99,7 @@ export function ChatSidebar({
         </button>
       </div>
 
-      {anyDocuments ? (
+      {anyChats ? (
         <>
           <div className="px-4 pt-5 pb-2">
             <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Chats</span>
