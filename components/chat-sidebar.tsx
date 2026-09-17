@@ -39,6 +39,9 @@ export function ChatSidebar({
   logEntries,
   ingestionMs,
 }: ChatSidebarProps) {
+  // The Chats section stays hidden until at least one chat has loaded documents.
+  const anyDocuments = chats.some((c) => c.documentCount > 0)
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
       <div className="flex items-center gap-2 px-4 pt-5 pb-4">
@@ -57,43 +60,49 @@ export function ChatSidebar({
         </button>
       </div>
 
-      <div className="px-4 pt-5 pb-2">
-        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Chats</span>
-      </div>
+      {anyDocuments ? (
+        <>
+          <div className="px-4 pt-5 pb-2">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Chats</span>
+          </div>
 
-      <nav aria-label="Chats" className="min-h-0 min-w-0 flex-1 overflow-y-auto px-3 pb-2">
-        <ul className="flex min-w-0 flex-col gap-1">
-          {chats.map((chat) => {
-            const active = chat.id === activeId
-            return (
-              <li key={chat.id} className="w-full overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => onSelect(chat.id)}
-                  aria-current={active ? "true" : undefined}
-                  className={[
-                    "flex w-full min-w-0 flex-col gap-0.5 rounded-lg border border-transparent px-3 py-2 text-left transition-colors",
-                    active
-                      ? "bg-brand-soft text-sidebar-foreground"
-                      : "text-sidebar-foreground hover:bg-background",
-                  ].join(" ")}
-                >
-                  <span title={chat.title} className="w-full min-w-0 truncate text-sm font-medium">
-                    {chat.title}
-                  </span>
-                  <span
-                    className={[
-                      "w-full min-w-0 truncate text-xs text-muted-foreground",
-                    ].join(" ")}
-                  >
-                    {summaryLine(chat.documentCount, chat.questionCount)}
-                  </span>
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      </nav>
+          <nav aria-label="Chats" className="min-h-0 min-w-0 flex-1 overflow-y-auto px-3 pb-2">
+            <ul className="flex min-w-0 flex-col gap-1">
+              {chats.map((chat) => {
+                const active = chat.id === activeId
+                return (
+                  <li key={chat.id} className="w-full overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => onSelect(chat.id)}
+                      aria-current={active ? "true" : undefined}
+                      className={[
+                        "flex w-full min-w-0 flex-col gap-0.5 rounded-lg border border-transparent px-3 py-2 text-left transition-colors",
+                        active
+                          ? "bg-brand-soft text-sidebar-foreground"
+                          : "text-sidebar-foreground hover:bg-background",
+                      ].join(" ")}
+                    >
+                      <span title={chat.title} className="w-full min-w-0 truncate text-sm font-medium">
+                        {chat.title}
+                      </span>
+                      <span
+                        className={[
+                          "w-full min-w-0 truncate text-xs text-muted-foreground",
+                        ].join(" ")}
+                      >
+                        {summaryLine(chat.documentCount, chat.questionCount)}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+        </>
+      ) : (
+        <div className="flex-1" />
+      )}
 
       {(logEntries.length > 0 || ingestionMs !== null) && (
         <div className="border-t border-sidebar-border px-4 py-3">
