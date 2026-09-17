@@ -24,6 +24,7 @@ import {
 import { citationContextBefore, citationPageHighlight } from "@/lib/citation-context"
 import { TurnDetails } from "@/components/turn-details"
 import { LogoMark } from "@/components/logo"
+import { Tooltip } from "@/components/tooltip"
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import type { AnswerStatus, Citation, ConversationTurn, ManualDocument } from "@/lib/types"
 
@@ -169,16 +170,17 @@ function IconAction({
   children: React.ReactNode
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      aria-expanded={expanded}
-      className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-    >
-      {children}
-    </button>
+    <Tooltip label={label}>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={label}
+        aria-expanded={expanded}
+        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        {children}
+      </button>
+    </Tooltip>
   )
 }
 

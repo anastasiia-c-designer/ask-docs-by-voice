@@ -149,7 +149,17 @@ export function citationContextBefore(
   if (!before) return ""
 
   const truncated = before.length > maxChars
-  const slice = before.slice(-maxChars).replace(/^\s+/, "")
+  let slice = before.slice(-maxChars)
+  if (truncated) {
+    // The fixed-length cut can land in the middle of a word ("…del before"). If
+    // the character just before the slice was part of a word, drop the leading
+    // partial word so the context starts on the nearest word boundary.
+    const charBeforeSlice = before[before.length - maxChars - 1]
+    if (charBeforeSlice && /\S/.test(charBeforeSlice)) {
+      slice = slice.replace(/^\S*/, "")
+    }
+  }
+  slice = slice.replace(/^\s+/, "")
   return (truncated ? "…" : "") + slice
 }
 
