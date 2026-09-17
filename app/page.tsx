@@ -58,6 +58,10 @@ interface Chat {
   // Set once the user renames the chat by hand. A manual name always wins and is
   // never overwritten when documents are (re)loaded.
   titleManual: boolean
+  // True once documents have been loaded into this chat at least once. Stays true
+  // even after "Replace documents" clears them, so the chat keeps counting as an
+  // existing chat in the sidebar.
+  everHadDocuments: boolean
 }
 
 // Chat title = first file's name without ".pdf", plus " +1" when a second file
@@ -88,6 +92,7 @@ function emptyChat(): Chat {
     ingestionMs: null,
     fromSample: false,
     titleManual: false,
+    everHadDocuments: false,
   }
 }
 
@@ -192,6 +197,7 @@ export default function Page() {
       // A manual name always wins; otherwise derive from the file names.
       title: c.titleManual ? c.title : deriveTitle(docs) || c.title,
       fromSample,
+      everHadDocuments: true,
     }))
     setVoiceError(null)
   }
@@ -439,6 +445,7 @@ export default function Page() {
     id: c.id,
     title: c.title,
     documentCount: c.documents.length,
+    everHadDocuments: c.everHadDocuments,
   }))
 
   // The product shell (sidebar + mobile menu) is revealed the first time any
