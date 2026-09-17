@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Menu, X } from "lucide-react"
 import { DocumentUploader } from "@/components/document-uploader"
-import { QuestionInput } from "@/components/question-input"
 import { Conversation } from "@/components/conversation"
 import { VoiceControls, type VoiceResult, type ExternalPhase } from "@/components/voice-controls"
 import { TestLog } from "@/components/test-log"
@@ -459,20 +458,22 @@ export default function Page() {
             </div>
           ) : (
             <>
-              <div className="border-b border-border/60 bg-background/90 px-4 py-3 backdrop-blur md:sticky md:top-0 md:z-10">
-                <div className="mx-auto w-full max-w-[720px]">
-                  <h1 className="mb-2 hidden truncate text-base font-semibold tracking-tight md:block">
+              <div className="border-b border-border/60 bg-background/90 px-4 py-2.5 backdrop-blur md:sticky md:top-0 md:z-10">
+                <div className="mx-auto flex w-full max-w-[720px] items-center gap-3">
+                  <h1 className="hidden max-w-[45%] shrink-0 truncate text-sm font-semibold tracking-tight md:block">
                     {activeChat.title}
                   </h1>
-                  <DocumentUploader
-                    documents={documents}
-                    onDocumentsReady={handleDocumentsReady}
-                    onReplace={handleReplace}
-                  />
+                  <div className="min-w-0 flex-1">
+                    <DocumentUploader
+                      documents={documents}
+                      onDocumentsReady={handleDocumentsReady}
+                      onReplace={handleReplace}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="mx-auto w-full max-w-[720px] flex-1 px-4 pt-6 pb-[19rem]">
+              <div className="mx-auto w-full max-w-[720px] flex-1 px-4 pt-6 pb-40">
                 {turns.length === 0 ? (
                   <p className="py-16 text-center text-sm text-muted-foreground text-pretty">
                     Tap the mic below and ask your first question.
@@ -488,7 +489,7 @@ export default function Page() {
               </div>
 
               <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur md:left-[260px]">
-                <div className="mx-auto flex max-w-[720px] flex-col gap-4 px-4 pb-5 pt-4">
+                <div className="mx-auto max-w-[720px] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                   <VoiceControls
                     key={activeId}
                     disabled={!hasDocuments}
@@ -501,8 +502,8 @@ export default function Page() {
                     onError={(message) => setVoiceError(message)}
                     onStopSpeaking={speech.stop}
                     onRetry={() => setVoiceError(null)}
+                    onAsk={(q) => runAsk(q, null)}
                   />
-                  <QuestionInput onAsk={(q) => runAsk(q, null)} disabled={loading} loading={loading} />
                 </div>
               </div>
             </>

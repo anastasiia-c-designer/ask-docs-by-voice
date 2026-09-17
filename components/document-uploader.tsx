@@ -96,26 +96,32 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
     }
   }
 
-  // Loaded state: compact bar with file chips + Replace.
+  // Loaded state: a single row of compact file chips (scrolls horizontally when
+  // it overflows, e.g. on mobile) followed by a Replace icon button.
   if (documents.length > 0) {
     return (
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-2.5">
-        {documents.map((doc) => (
-          <span
-            key={doc.fileName}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1.5 text-xs"
-          >
-            <FileText className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-            <span className="max-w-40 truncate font-medium text-foreground">{doc.fileName}</span>
-            <span className="text-muted-foreground">
-              · {doc.pages.length} {doc.pages.length === 1 ? "page" : "pages"}
+      <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto md:justify-end">
+          {documents.map((doc) => (
+            <span
+              key={doc.fileName}
+              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-muted px-2 py-1 text-[11px]"
+            >
+              <FileText className="size-3 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="max-w-32 truncate font-medium text-foreground">{doc.fileName}</span>
+              <span className="text-muted-foreground">· {doc.pages.length}p</span>
             </span>
-          </span>
-        ))}
-        <Button variant="ghost" size="sm" onClick={onReplace} className="ml-auto text-muted-foreground">
-          <RefreshCw className="mr-1.5 size-3.5" />
-          Replace
-        </Button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={onReplace}
+          aria-label="Replace documents"
+          title="Replace documents"
+          className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <RefreshCw className="size-4" />
+        </button>
       </div>
     )
   }

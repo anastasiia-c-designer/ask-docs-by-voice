@@ -80,25 +80,33 @@ export function AnswerDisplay({ turn, documents, onPlay }: AnswerDisplayProps) {
 
           {result && !pending && (
             <>
-              {(() => {
-                const meta = STATUS_META[result.status]
-                const { Icon } = meta
-                return (
-                  <span
-                    className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${meta.className}`}
-                  >
-                    <Icon className="size-3.5" aria-hidden />
-                    {meta.label}
-                  </span>
-                )
-              })()}
+              {/* Verified answers show the check on the citation chip instead of a
+                  status label; other statuses keep the label above the answer. */}
+              {result.status !== "answered" &&
+                (() => {
+                  const meta = STATUS_META[result.status]
+                  const { Icon } = meta
+                  return (
+                    <span
+                      className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${meta.className}`}
+                    >
+                      <Icon className="size-3.5" aria-hidden />
+                      {meta.label}
+                    </span>
+                  )
+                })()}
 
               <p className="text-sm leading-relaxed text-foreground text-pretty">{result.answer}</p>
 
               {result.citations.length > 0 && (
                 <ul className="flex flex-col gap-3">
                   {result.citations.map((c, i) => (
-                    <CitationCard key={i} citation={c} documents={documents} />
+                    <CitationCard
+                      key={i}
+                      citation={c}
+                      documents={documents}
+                      verified={result.status === "answered"}
+                    />
                   ))}
                 </ul>
               )}
@@ -220,7 +228,15 @@ function ActionsRow({
 // to two lines), the verbatim quote as a left-accented block, and a "Show full
 // page" toggle that reveals the full extracted page text (headers/footers
 // stripped) with the quote highlighted and scrolled into view.
-function CitationCard({ citation, documents }: { citation: Citation; documents: ManualDocument[] }) {
+function CitationCard({
+  citation,
+  documents,
+  verified,
+}: {
+  citation: Citation
+  documents: ManualDocument[]
+  verified: boolean
+}) {
   const [open, setOpen] = useState(false)
   const markRef = useRef<HTMLSpanElement>(null)
 
@@ -235,7 +251,13 @@ function CitationCard({ citation, documents }: { citation: Citation; documents: 
 
   return (
     <li>
-      <span className="inline-flex items-center rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+      <span
+        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+          verified ? "border-success/30 bg-success/10 text-success" : "border-border bg-card text-muted-foreground"
+        }`}
+      >
+        {verified && <CheckCircle2 className="size-3" aria-hidden />}
+        {verified && "Verified · "}
         {citation.fileName} · p. {citation.page}
       </span>
       {context && (

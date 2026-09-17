@@ -1,18 +1,23 @@
 "use client"
 
-// Microphone capture and the single central voice control. Tap to start
-// recording, tap again to stop; on stop it posts audio to /api/transcribe and
-// hands the transcript back to the page, which sends it to /api/ask exactly
-// like a typed question.
+// Microphone capture plus the single compact composer bar. The bar holds a text
+// input and one round action button; tap the mic to start recording, tap again
+// (the button becomes Stop) to stop. On stop it posts audio to /api/transcribe
+// and hands the transcript back to the page, which sends it to /api/ask exactly
+// like a typed question. Typing a question and pressing Send (or Enter) asks it
+// as text.
 //
-// The button surfaces every phase of a voice turn with its own look and label:
-// idle, recording (live level ring + elapsed), transcribing, thinking (from the
-// page while /api/ask runs), speaking (from the page while the answer plays),
-// and error. Motion is replaced with static indicators when the user prefers
-// reduced motion.
+// The bar surfaces every phase of a turn inline: idle (input + mic/send),
+// recording (live waveform + elapsed + Stop), transcribing, thinking (from the
+// page while /api/ask runs), speaking (from the page while the answer plays,
+// with a Stop button), and error (inline message + Try again). Motion is
+// replaced with static indicators when the user prefers reduced motion.
+//
+// The recording pipeline (MediaRecorder, AnalyserNode metering, transcription)
+// is unchanged from the previous version; only its controls were restyled.
 
 import { useEffect, useRef, useState } from "react"
-import { Mic, Square, Loader2, BookOpen, AlertCircle, RotateCcw } from "lucide-react"
+import { Mic, Square, Loader2, AlertCircle, RotateCcw, ArrowUp } from "lucide-react"
 import type { TranscribeResponse } from "@/lib/types"
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 
@@ -39,10 +44,16 @@ interface VoiceControlsProps {
   onError: (message: string) => void
   onStopSpeaking: () => void
   onRetry: () => void
+  onAsk: (question: string) => void
 }
 
 // A transcript shorter than this is treated as "didn't catch that".
 const MIN_TRANSCRIPT_CHARS = 2
+
+// Number of bars in the recording waveform.
+const BAR_COUNT = 20
+// Resting waveform (also used under reduced motion, when metering is off).
+const STATIC_BARS = Array.from({ length: BAR_COUNT }, () => 0.35)
 
 function pickMimeType(): string {
   if (typeof MediaRecorder === "undefined") return ""
@@ -88,10 +99,12 @@ export function VoiceControls({
   onError,
   onStopSpeaking,
   onRetry,
+  onAsk,
 }: VoiceControlsProps) {
   const [status, setStatus] = useState<InternalStatus>("idle")
-  const [level, setLevel] = useState(0)
+  const [bars, setBars] = useState<number[]>(STATIC_BARS)
   const [elapsed, setElapsed] = useState(0)
+  const [text, setText] = useState("")
   const reducedMotion = usePrefersReducedMotion()
 
   const recorderRef = useRef<MediaRecorder | null>(null)
@@ -122,7 +135,7 @@ export function VoiceControls({
       void audioCtxRef.current.close().catch(() => {})
       audioCtxRef.current = null
     }
-    setLevel(0)
+    setBars(STATIC_BARS)
   }
 
   function releaseStream() {
@@ -158,14 +171,19 @@ export function VoiceControls({
 
       const tick = () => {
         analyser.getByteTimeDomainData(data)
-        let sumSquares = 0
-        for (let i = 0; i < data.length; i++) {
-          const v = (data[i] - 128) / 128
-          sumSquares += v * v
+        // Downsample the time-domain buffer into BAR_COUNT RMS bars.
+        const groupSize = Math.floor(data.length / BAR_COUNT) || 1
+        const next: number[] = []
+        for (let g = 0; g < BAR_COUNT; g++) {
+          let sumSquares = 0
+          for (let i = 0; i < groupSize; i++) {
+            const v = (data[g * groupSize + i] - 128) / 128
+            sumSquares += v * v
+          }
+          const rms = Math.sqrt(sumSquares / groupSize)
+          next.push(Math.min(1, rms * 2.6))
         }
-        const rms = Math.sqrt(sumSquares / data.length)
-        // Gentle curve so speech reads as a lively but calm ring.
-        setLevel(Math.min(1, rms * 2.6))
+        setBars(next)
         rafRef.current = requestAnimationFrame(tick)
       }
       rafRef.current = requestAnimationFrame(tick)
@@ -291,7 +309,7 @@ export function VoiceControls({
     recorderRef.current = null
   }
 
-  // Resolve the single phase the button should present.
+  // Resolve the single phase the bar should present.
   const phase: DisplayPhase =
     status === "recording"
       ? "recording"
@@ -305,123 +323,183 @@ export function VoiceControls({
               ? "error"
               : "idle"
 
-  const label: string = {
-    idle: "Tap to ask",
-    recording: "Listening… tap to stop",
-    transcribing: "Got it, transcribing…",
+  const statusText: string = {
+    idle: "",
+    recording: "Listening…",
+    transcribing: "Transcribing…",
     thinking: "Checking the manual…",
     speaking: "Answering…",
     error: errorMessage ?? "Something went wrong",
   }[phase]
 
-  function handleClick() {
-    if (phase === "recording") return stop()
-    if (phase === "speaking") return onStopSpeaking()
-    if (phase === "idle" || phase === "error") return void start()
-    // transcribing / thinking: busy, no action.
+  function submitText() {
+    const question = text.trim()
+    if (!question || disabled || phase !== "idle") return
+    onAsk(question)
+    setText("")
   }
 
-  const interactionDisabled = disabled || phase === "transcribing" || phase === "thinking"
+  const hasText = text.trim().length > 0
+  const busy = phase === "transcribing" || phase === "thinking"
 
-  const circleClasses: Record<DisplayPhase, string> = {
-    idle: "bg-primary text-primary-foreground hover:opacity-90",
-    recording: "bg-primary text-primary-foreground",
-    transcribing: "bg-muted text-muted-foreground",
-    thinking: `bg-muted text-muted-foreground${reducedMotion ? "" : " animate-pulse"}`,
-    speaking: "bg-primary text-primary-foreground hover:opacity-90",
-    error: "border border-destructive bg-background text-destructive hover:bg-destructive/5",
+  // The single round action button on the right of the bar.
+  function ActionButton() {
+    if (phase === "recording") {
+      return (
+        <button
+          type="button"
+          onClick={stop}
+          aria-pressed
+          aria-label="Stop recording"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          <Square className="size-5 fill-current" />
+        </button>
+      )
+    }
+    if (phase === "speaking") {
+      return (
+        <button
+          type="button"
+          onClick={onStopSpeaking}
+          aria-label="Stop answer"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-muted"
+        >
+          <Square className="size-4 fill-current" />
+        </button>
+      )
+    }
+    if (busy) {
+      return (
+        <span
+          aria-hidden
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+        >
+          <Loader2 className={reducedMotion ? "size-5" : "size-5 animate-spin"} />
+        </span>
+      )
+    }
+    if (phase === "idle" && hasText) {
+      return (
+        <button
+          type="button"
+          onClick={submitText}
+          disabled={disabled}
+          aria-label="Send question"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          <ArrowUp className="size-5" />
+        </button>
+      )
+    }
+    // idle (no text) or error → mic to (re)start recording.
+    return (
+      <button
+        type="button"
+        onClick={() => void start()}
+        disabled={disabled}
+        aria-label="Ask by voice"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+      >
+        <Mic className="size-5" />
+      </button>
+    )
   }
 
   return (
-    <div className="flex flex-col items-center gap-2.5">
-      <div className="relative flex size-24 items-center justify-center">
-        {/* Live level ring while recording (static ring under reduced motion). */}
-        {phase === "recording" && (
-          <span
-            aria-hidden
-            className="absolute inset-0 rounded-full bg-primary/15"
-            style={{
-              transform: `scale(${reducedMotion ? 1.15 : 1 + level * 0.4})`,
-              transition: reducedMotion ? undefined : "transform 90ms linear",
-            }}
-          />
+    <div className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-2 pl-4">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        {phase === "idle" && (
+          <>
+            <label htmlFor="composer" className="sr-only">
+              Ask by voice or type a question
+            </label>
+            <input
+              id="composer"
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (e.nativeEvent.isComposing || e.keyCode === 229) return
+                  e.preventDefault()
+                  submitText()
+                }
+              }}
+              placeholder="Ask by voice or type a question…"
+              disabled={disabled}
+              className="h-7 min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-60"
+            />
+          </>
         )}
-        <button
-          type="button"
-          onClick={handleClick}
-          disabled={interactionDisabled}
-          aria-pressed={phase === "recording"}
-          aria-label={
-            phase === "speaking" ? "Stop answer" : phase === "recording" ? "Stop recording" : label
-          }
-          className={[
-            "relative flex size-20 items-center justify-center rounded-full transition-colors disabled:cursor-default disabled:opacity-70",
-            circleClasses[phase],
-          ].join(" ")}
-        >
-          {phase === "idle" && <Mic className="size-8" />}
-          {phase === "error" && <Mic className="size-8" />}
-          {phase === "recording" && <Square className="size-6 fill-current" />}
-          {phase === "transcribing" && (
-            <Loader2 className={reducedMotion ? "size-7" : "size-7 animate-spin"} />
-          )}
-          {phase === "thinking" && <BookOpen className="size-7" />}
-          {phase === "speaking" && (
-            <span className="flex items-end gap-1" aria-hidden>
-              {[0, 1, 2, 3].map((i) => (
+
+        {phase === "recording" && (
+          <>
+            <div className="flex h-7 flex-1 items-center gap-[2px] overflow-hidden" aria-hidden>
+              {bars.map((b, i) => (
                 <span
                   key={i}
-                  className="eq-bar block w-1 rounded-full bg-current"
-                  style={{ height: 22, animationDelay: `${i * 140}ms` }}
+                  className="w-[3px] shrink-0 rounded-full bg-primary"
+                  style={{
+                    height: `${Math.max(12, Math.round(b * 100))}%`,
+                    transition: reducedMotion ? undefined : "height 90ms linear",
+                  }}
                 />
               ))}
+            </div>
+            <span className="shrink-0 text-sm font-medium text-foreground">Listening…</span>
+            <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+              {formatElapsed(elapsed)}
             </span>
-          )}
-        </button>
-      </div>
+          </>
+        )}
 
-      <div className="flex min-h-10 flex-col items-center gap-1">
-        <div className="flex items-center gap-2">
-          {phase === "error" && <AlertCircle className="size-4 shrink-0 text-destructive" aria-hidden />}
-          <span
-            className={[
-              "text-sm font-medium text-pretty text-center",
-              phase === "error" ? "text-destructive" : "text-foreground",
-            ].join(" ")}
-            aria-live="polite"
-          >
-            {label}
-          </span>
-        </div>
-
-        {phase === "recording" && (
-          <span className="font-mono text-xs tabular-nums text-muted-foreground" aria-hidden>
-            {formatElapsed(elapsed)}
-          </span>
+        {busy && (
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Loader2 className={reducedMotion ? "size-4" : "size-4 animate-spin"} aria-hidden />
+            {statusText}
+          </div>
         )}
 
         {phase === "speaking" && (
-          <button
-            type="button"
-            onClick={onStopSpeaking}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-          >
-            <Square className="size-3 fill-current" />
-            Stop
-          </button>
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <span className="flex items-end gap-0.5" aria-hidden>
+              {[0, 1, 2, 3].map((i) => (
+                <span
+                  key={i}
+                  className={reducedMotion ? "block w-0.5 rounded-full bg-primary" : "eq-bar block w-0.5 rounded-full bg-primary"}
+                  style={{ height: 14, animationDelay: `${i * 140}ms` }}
+                />
+              ))}
+            </span>
+            Answering…
+          </div>
         )}
 
         {phase === "error" && (
-          <button
-            type="button"
-            onClick={() => void start()}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-          >
-            <RotateCcw className="size-3" />
-            Try again
-          </button>
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <AlertCircle className="size-4 shrink-0 text-destructive" aria-hidden />
+            <span className="min-w-0 flex-1 truncate text-sm text-destructive" title={statusText}>
+              {statusText}
+            </span>
+            <button
+              type="button"
+              onClick={() => void start()}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              <RotateCcw className="size-3" />
+              Try again
+            </button>
+          </div>
         )}
       </div>
+
+      {/* Live status for screen readers (visual status shown inline above). */}
+      <span className="sr-only" aria-live="polite">
+        {statusText}
+      </span>
+
+      <ActionButton />
     </div>
   )
 }
