@@ -1,0 +1,35 @@
+# Final run
+
+- Date: 17 Sep 2026, evening (Kyiv time)
+- App: deployed version at https://ask-your-manual-app.vercel.app
+- Browser / device: [впиши]
+- Model: gpt-5.6-luna, reasoning effort none; transcription gpt-transcribe; TTS gpt-4o-mini-tts
+
+## Summary
+
+- Factual accuracy: 11/11
+- Citation verified: 11/11, no retries
+- Upload limit tests: 3/3
+- Question to first audio: median 7.3 s, range 4.5–9.2 s, one outlier 16.2 s (TTS 11.4 s)
+- Voice question cost: median ~$0.0020, range $0.0016–0.0035
+
+## Known issues found in this run
+
+- Session B: TTS cost column empty, so total cost is understated for that row. Not seen in other rows.
+- Session C, first attempt: "Transcription failed" in the third chat of one tab. Not reproduced.
+
+## Session A
+[встав лог]
+
+## Session B
+[встав лог]
+
+## Session C
+[встав лог сесії C з задеплоєного сайту]
+
+## Upload limit tests
+| # | Upload | Result |
+|---|---|---|
+| E1 | scanned-manual.pdf | ✓ "looks like a scanned PDF… Try exporting it as a text-based PDF." |
+| E2 | long-manual-11-pages.pdf | ✓ "Too many pages: 11… Remove a file or use a shorter manual." |
+| E3 | 3 files | ✓ "That's more than we can read at once. Choose up to 2 PDFs." |
