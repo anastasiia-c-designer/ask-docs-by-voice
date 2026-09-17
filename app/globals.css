@@ -42,11 +42,15 @@
   --color-foreground: var(--foreground);
   --color-background: var(--background);
 
-  /* New brand tokens (see spec). --brand is the spec's --accent (links, quote
-     border, recording, highlights); --brand-soft is --accent-soft. */
+  /* Brand tokens. --brand is the violet primary action color (composer mic/send)
+     with --brand-hover for its hover state. --accent-strong is the iris accent
+     (#6D5DF6) used for links, quote borders, recording, and speaking; --brand-soft
+     is its soft tint. */
   --color-ink: var(--ink);
   --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
   --color-brand-soft: var(--brand-soft);
+  --color-accent-strong: var(--accent-strong);
   --color-user-bubble: var(--user-bubble);
   --color-surface: var(--surface);
 
@@ -66,7 +70,9 @@
 
   /* Brand palette (hex per the redesign spec). */
   --ink: #0e2a3b;
-  --brand: #6d5df6;
+  --brand: #4b37b2;
+  --brand-hover: #3e2d96;
+  --accent-strong: #6d5df6;
   --brand-soft: #ece9fe;
   --user-bubble: #e2dcff;
   --surface: #ffffff;

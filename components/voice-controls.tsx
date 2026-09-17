@@ -351,7 +351,7 @@ export function VoiceControls({
           onClick={stop}
           aria-pressed
           aria-label="Stop recording"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand text-primary-foreground transition-opacity hover:opacity-90"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-strong text-white transition-opacity hover:opacity-90"
         >
           <Square className="size-5 fill-current" />
         </button>
@@ -386,7 +386,7 @@ export function VoiceControls({
           onClick={submitText}
           disabled={disabled}
           aria-label="Send question"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-hover disabled:opacity-50"
         >
           <ArrowUp className="size-5" />
         </button>
@@ -399,7 +399,7 @@ export function VoiceControls({
         onClick={() => void start()}
         disabled={disabled}
         aria-label="Ask by voice"
-        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-hover disabled:opacity-50"
       >
         <Mic className="size-5" />
       </button>
@@ -439,7 +439,7 @@ export function VoiceControls({
               {bars.map((b, i) => (
                 <span
                   key={i}
-                  className="w-[3px] shrink-0 rounded-full bg-brand"
+                  className="w-[3px] shrink-0 rounded-full bg-accent-strong"
                   style={{
                     height: `${Math.max(12, Math.round(b * 100))}%`,
                     transition: reducedMotion ? undefined : "height 90ms linear",
@@ -467,7 +467,7 @@ export function VoiceControls({
               {[0, 1, 2, 3].map((i) => (
                 <span
                   key={i}
-                  className={reducedMotion ? "block w-0.5 rounded-full bg-brand" : "eq-bar block w-0.5 rounded-full bg-brand"}
+                  className={reducedMotion ? "block w-0.5 rounded-full bg-accent-strong" : "eq-bar block w-0.5 rounded-full bg-accent-strong"}
                   style={{ height: 14, animationDelay: `${i * 140}ms` }}
                 />
               ))}
