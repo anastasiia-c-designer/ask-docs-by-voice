@@ -1,0 +1,57 @@
+# Spot check on the final version
+
+Short check of latency and cost on the version being submitted. Accuracy was already measured in the full run (`results/final-run.md`) and on a real manufacturer manual (`results/real-manual-run.md`).
+
+- Date / time: 18.09 / 01:16
+- Browser / device: Safari Version 17.5 (19618.2.12.11.6) / Macbook M4 2024
+- App: deployed version at https://ask-your-manual-app.vercel.app
+- Models: gpt-5.6-luna (reasoning effort: none), gpt-transcribe, gpt-4o-mini-tts
+
+## Why this check exists
+
+The full run was recorded before the last round of UI changes and before one bug fix (the stop button was remounting on every waveform frame, so clicks during recording were lost). Answer logic, system prompt, model settings and citation verification were not touched after the full run, so accuracy results still hold. Latency could change, so it was re-measured here.
+
+## Questions
+
+All asked by voice. Sample manual loaded via "Try sample manuals" (one document: brisa-manual-v1.pdf), then replaced with brisa-manual-v2.pdf + brisa-warranty.pdf for the last question.
+
+| # | Question | Expected | Result |
+|---|---|---|---|
+| 1 | What room size is the AP-200 for? | Up to 20 sq m, p. 4 | ✓ factual, ✓ citation |
+| 2 | And what about the other model? | AP-400: up to 45 sq m, p. 4 | ✓ factual, ✓ citation |
+| 3 | How much does the AP-400 weigh? | Not in the manual, no citation | ✓ factual, ✓ no invented citation |
+| 4 | How often should I replace the AP-400 HEPA filter? (after replacing with v2) | Every 6 months, v2 p. 6 | ✓ factual, ✓ citation |
+
+4/4 factual, 4/4 citations verified, no retries.
+
+## Measurements
+
+| Metric | Full run (17 Sep, evening) | This check |
+|---|---|---|
+| Question to first audio, median | 7.3 s | 3.8 s |
+| Transcription | 1.8–2.8 s | 0.8–1.3 s |
+| Model answer (server) | 1.2–3.5 s | 0.9–1.4 s |
+| TTS to first audio | 1.4–2.7 s | 1.2–1.5 s |
+| Cost per voice question | ~$0.0020 | ~$0.0017 |
+
+Latency roughly halved. Two likely contributions, not separated here: the stop-button fix removed ~60 UI re-renders per second during recording, and provider latency varies with load (all three OpenAI stages were slower together in the evening run, with the document, browser and network unchanged).
+
+Prompt caching was already warm at the first question (1,604 cached tokens), because the same sample manual had been loaded in an earlier session within the cache window.
+
+Note: in this check "Try sample manuals" loaded one document, so input tokens are lower than in runs with two documents.
+
+## Logs
+
+### Before replace
+
+| Question | Input | Status | Answer | Citations | Verified | Attempts | Total ms | OpenAI ms | Input tokens | Cached tokens | Cache write tokens | Output tokens | Model cost USD | Recording s | Transcription ms | Ask ms | TTS ms | Q-to-audio ms | Transcription USD | TTS USD (est) | Total cost USD |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| What room size is AP200 for? | voice | answered | The AP-200 is recommended for rooms up to 20 square meters. | brisa-manual-v1.pdf p.4: AP-200 Recommended room size: up to 20 sq m. | yes | 1 | 1176 | 1175 | 1617 | 1604 | 10 | 66 | 0.00011 | 4.21 | 1011 | 1438 | 1252 | 3701 | 0.00032 | 0.00144 | 0.00187 |
+| And what about the other model? | voice | answered | The AP-400 is recommended for rooms up to 45 square meters. | brisa-manual-v1.pdf p.4: AP-400 Recommended room size: up to 45 sq m. | yes | 1 | 1385 | 1384 | 1655 | 1604 | 48 | 66 | 0.00012 | 2.25 | 840 | 1763 | 1208 | 3812 | 0.00017 | 0.00148 | 0.00177 |
+| How much does the AP400 weigh? | voice | not_found | The documents do not cover the weight of the AP-400. | — | yes | 1 | 931 | 930 | 1686 | 1604 | 79 | 32 | 0.00009 | 4.96 | 1051 | 1126 | 1488 | 3666 | 0.00037 | 0.00094 | 0.00140 |
+
+### After replace
+
+| Question | Input | Status | Answer | Citations | Verified | Attempts | Total ms | OpenAI ms | Input tokens | Cached tokens | Cache write tokens | Output tokens | Model cost USD | Recording s | Transcription ms | Ask ms | TTS ms | Q-to-audio ms | Transcription USD | TTS USD (est) | Total cost USD |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| How often should I replace the AP400 HEPA filter? | voice | answered | Replace the AP-400 HEPA filter every 6 months. | brisa-manual-v2.pdf p.6: Replace the HEPA filter of the AP-400 every 6 months. | yes | 1 | 1074 | 1073 | 1818 | 1801 | 14 | 65 | 0.00012 | 5.18 | 1342 | 1258 | 1339 | 3941 | 0.00039 | 0.00108 | 0.00159 |
