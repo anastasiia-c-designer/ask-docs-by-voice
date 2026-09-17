@@ -48,8 +48,21 @@ export async function extractPdf(file: File): Promise<ManualDocument> {
 
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
     const page = await pdf.getPage(pageNumber)
-    const content = await page.getTextContent()
-    const text = content.items
+
+    // Do NOT use page.getTextContent(): internally it drains the text
+    // ReadableStream with `for await...of`, which Safari (desktop 17.5 and iOS)
+    // does not support for streams, throwing "undefined is not a function
+    // (near '...t of e...')". Read the stream manually instead and rebuild the
+    // same { items } shape getTextContent would have returned.
+    const stream = page.streamTextContent()
+    const reader = stream.getReader()
+    const items: { str?: string }[] = []
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      if (value?.items) items.push(...value.items)
+    }
+    const text = items
       .map((item) => ("str" in item ? item.str : ""))
       .join(" ")
       .replace(/\s+/g, " ")
