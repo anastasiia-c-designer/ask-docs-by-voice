@@ -303,10 +303,15 @@ export function VoiceControls({
     startMeters(stream)
   }
 
+  // Always act on the stable recorder ref, never on (possibly stale) React
+  // state. recorder.stop() fires onstop → finish(), which stops the meters and
+  // timer, stops all mic tracks, and continues with transcription.
   function stop() {
-    if (status !== "recording") return
-    recorderRef.current?.stop()
+    const recorder = recorderRef.current
     recorderRef.current = null
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop()
+    }
   }
 
   // Resolve the single phase the bar should present.
@@ -342,8 +347,12 @@ export function VoiceControls({
   const hasText = text.trim().length > 0
   const busy = phase === "transcribing" || phase === "thinking"
 
-  // The single round action button on the right of the bar.
-  function ActionButton() {
+  // The single round action button on the right of the bar. Rendered by calling
+  // this function inline (see below), NOT as <ActionButton />: defining a
+  // component inside the render creates a new component type every render, so
+  // React would unmount and remount the button on every waveform frame (~60/s
+  // while recording) and clicks on Stop would rarely land on a stable node.
+  function renderActionButton() {
     if (phase === "recording") {
       return (
         <button
@@ -499,7 +508,7 @@ export function VoiceControls({
         {statusText}
       </span>
 
-      <ActionButton />
+      {renderActionButton()}
     </div>
   )
 }
