@@ -1,15 +1,30 @@
 "use client"
 
-// Renders a single conversation turn as a card: the transcript ("You asked: …")
-// which appears as soon as transcription finishes, a skeleton while the answer
-// is pending, then the status, the answer (the largest text in the card), a
-// small replay control (latest turn only), each citation with its page context
-// and quote, and a collapsed Details toggle.
+// Renders a single conversation turn as a chat exchange (no cards):
+//   • the user's question as a right-aligned bubble (with a mic icon for voice
+//     questions), shown as soon as the transcript is ready;
+//   • the assistant reply on the left with the Pagewise logo as an avatar — an
+//     animated "thinking" indicator while pending, then the status label, the
+//     answer, its citations, an actions row (Play / Copy / Details), and the
+//     collapsible Details panel below.
 
-import { useEffect, useRef, useState, type ReactNode } from "react"
-import { CheckCircle2, SearchX, HelpCircle, ShieldAlert, AlertCircle } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import {
+  CheckCircle2,
+  SearchX,
+  HelpCircle,
+  ShieldAlert,
+  AlertCircle,
+  Mic,
+  Volume2,
+  Copy,
+  Check,
+  BarChart3,
+} from "lucide-react"
 import { citationContextBefore, citationPageHighlight } from "@/lib/citation-context"
 import { TurnDetails } from "@/components/turn-details"
+import { LogoMark } from "@/components/logo"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import type { AnswerStatus, Citation, ConversationTurn, ManualDocument } from "@/lib/types"
 
 const STATUS_META: Record<
@@ -29,74 +44,182 @@ const STATUS_META: Record<
 interface AnswerDisplayProps {
   turn: ConversationTurn
   documents: ManualDocument[]
-  speechControls?: ReactNode
+  onPlay: (text: string) => void
 }
 
-export function AnswerDisplay({ turn, documents, speechControls }: AnswerDisplayProps) {
-  const { question, result, pending, error } = turn
+export function AnswerDisplay({ turn, documents, onPlay }: AnswerDisplayProps) {
+  const { question, result, pending, error, inputMode } = turn
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   return (
-    <article className="rounded-xl border border-border bg-card p-4 sm:p-5">
-      <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-        <span className="font-medium text-foreground">You asked:</span> {question}
-      </p>
-
-      {pending && (
-        <div className="mt-4 flex flex-col gap-2" aria-hidden>
-          <span className="h-4 w-11/12 animate-pulse rounded bg-muted" />
-          <span className="h-4 w-4/5 animate-pulse rounded bg-muted" />
-          <span className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+    <div className="flex flex-col gap-4">
+      {/* User question, right-aligned */}
+      <div className="flex justify-end">
+        <div className="flex max-w-[85%] items-center gap-2 sm:max-w-[75%]">
+          {inputMode === "voice" && (
+            <Mic className="size-4 shrink-0 text-muted-foreground" aria-label="Voice question" />
+          )}
+          <div className="rounded-2xl rounded-br-sm bg-muted px-3.5 py-2 text-sm leading-relaxed text-foreground text-pretty">
+            {question}
+          </div>
         </div>
-      )}
-      {pending && <span className="sr-only">Finding an answer…</span>}
+      </div>
 
-      {error && !pending && (
-        <div className="mt-4 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3">
-          <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
-          <p className="text-sm text-foreground">{error}</p>
-        </div>
-      )}
+      {/* Assistant reply, left with logo avatar */}
+      <div className="flex gap-3">
+        <LogoMark className="mt-0.5 size-7 shrink-0" />
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          {pending && <Thinking />}
 
-      {result && !pending && (
-        <>
-          {(() => {
-            const meta = STATUS_META[result.status]
-            const { Icon } = meta
-            return (
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${meta.className}`}
-                >
-                  <Icon className="size-3.5" aria-hidden />
-                  {meta.label}
-                </span>
-                {speechControls}
-              </div>
-            )
-          })()}
-
-          <p className="mt-3 text-lg leading-relaxed text-card-foreground text-pretty">
-            {result.answer}
-          </p>
-
-          {result.citations.length > 0 && (
-            <ul className="mt-4 flex flex-col gap-3">
-              {result.citations.map((c, i) => (
-                <CitationCard key={i} citation={c} documents={documents} />
-              ))}
-            </ul>
+          {error && !pending && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+              <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+              <p className="text-sm text-foreground">{error}</p>
+            </div>
           )}
 
-          <TurnDetails turn={turn} />
-        </>
-      )}
-    </article>
+          {result && !pending && (
+            <>
+              {(() => {
+                const meta = STATUS_META[result.status]
+                const { Icon } = meta
+                return (
+                  <span
+                    className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${meta.className}`}
+                  >
+                    <Icon className="size-3.5" aria-hidden />
+                    {meta.label}
+                  </span>
+                )
+              })()}
+
+              <p className="text-sm leading-relaxed text-foreground text-pretty">{result.answer}</p>
+
+              {result.citations.length > 0 && (
+                <ul className="flex flex-col gap-3">
+                  {result.citations.map((c, i) => (
+                    <CitationCard key={i} citation={c} documents={documents} />
+                  ))}
+                </ul>
+              )}
+
+              <ActionsRow
+                onPlay={() => onPlay(result.answer)}
+                copyText={buildCopyText(result.answer, result.citations)}
+                canShowDetails={Boolean(turn.metrics)}
+                detailsOpen={detailsOpen}
+                onToggleDetails={() => setDetailsOpen((v) => !v)}
+              />
+
+              <TurnDetails turn={turn} open={detailsOpen} />
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 
-// A single citation: the page badge, the section context, the verbatim quote,
-// and a "Show full page" toggle that reveals the full extracted page text
-// (headers/footers stripped) with the quote highlighted and scrolled into view.
+// Answer text plus each citation as "fileName p. N: quote".
+function buildCopyText(answer: string, citations: Citation[]): string {
+  const parts = [answer]
+  if (citations.length > 0) {
+    parts.push(citations.map((c) => `${c.fileName} p. ${c.page}: ${c.quote}`).join("\n"))
+  }
+  return parts.join("\n\n")
+}
+
+// Animated three-dot "thinking" indicator; static when reduced motion is on.
+function Thinking() {
+  const reduced = usePrefersReducedMotion()
+  return (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <span className="flex items-center gap-1" aria-hidden>
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className={`size-1.5 rounded-full bg-muted-foreground/50 ${reduced ? "" : "animate-bounce"}`}
+            style={reduced ? undefined : { animationDelay: `${i * 150}ms` }}
+          />
+        ))}
+      </span>
+      Checking the manual…
+    </div>
+  )
+}
+
+// Icon-only action button with an accessible label and native tooltip.
+function IconAction({
+  label,
+  onClick,
+  expanded,
+  children,
+}: {
+  label: string
+  onClick: () => void
+  expanded?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      aria-expanded={expanded}
+      className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    >
+      {children}
+    </button>
+  )
+}
+
+function ActionsRow({
+  onPlay,
+  copyText,
+  canShowDetails,
+  detailsOpen,
+  onToggleDetails,
+}: {
+  onPlay: () => void
+  copyText: string
+  canShowDetails: boolean
+  detailsOpen: boolean
+  onToggleDetails: () => void
+}) {
+  const [copied, setCopied] = useState(false)
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(copyText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="-ml-1.5 flex items-center gap-0.5">
+      <IconAction label="Play answer" onClick={onPlay}>
+        <Volume2 className="size-4" />
+      </IconAction>
+      <IconAction label={copied ? "Copied" : "Copy answer"} onClick={copy}>
+        {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}
+      </IconAction>
+      {canShowDetails && (
+        <IconAction label="Details" onClick={onToggleDetails} expanded={detailsOpen}>
+          <BarChart3 className="size-4" />
+        </IconAction>
+      )}
+    </div>
+  )
+}
+
+// A single citation with no card: a file/page chip, the section context (clamped
+// to two lines), the verbatim quote as a left-accented block, and a "Show full
+// page" toggle that reveals the full extracted page text (headers/footers
+// stripped) with the quote highlighted and scrolled into view.
 function CitationCard({ citation, documents }: { citation: Citation; documents: ManualDocument[] }) {
   const [open, setOpen] = useState(false)
   const markRef = useRef<HTMLSpanElement>(null)
@@ -111,12 +234,14 @@ function CitationCard({ citation, documents }: { citation: Citation; documents: 
   }, [open])
 
   return (
-    <li className="rounded-lg border border-border bg-background p-3">
+    <li>
       <span className="inline-flex items-center rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
         {citation.fileName} · p. {citation.page}
       </span>
-      {context && <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{context}</p>}
-      <blockquote className="mt-2 border-l-2 border-primary bg-primary/5 py-1.5 pl-3 text-sm leading-relaxed text-foreground">
+      {context && (
+        <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{context}</p>
+      )}
+      <blockquote className="mt-1.5 border-l-2 border-primary bg-primary/5 py-1.5 pl-3 text-sm leading-relaxed text-foreground">
         {citation.quote}
       </blockquote>
 
@@ -124,7 +249,7 @@ function CitationCard({ citation, documents }: { citation: Citation; documents: 
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="mt-2 text-xs font-medium text-primary transition-colors hover:underline"
+        className="mt-1.5 text-xs font-medium text-primary transition-colors hover:underline"
       >
         {open ? "Hide full page" : "Show full page"}
       </button>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Square, Volume2, Menu, X } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { DocumentUploader } from "@/components/document-uploader"
 import { QuestionInput } from "@/components/question-input"
 import { Conversation } from "@/components/conversation"
@@ -360,10 +360,10 @@ export default function Page() {
     recordingChatIdRef.current = activeIdRef.current
   }
 
-  function handlePlayLatest() {
-    const last = [...turns].reverse().find((t) => t.result)
-    if (!last?.result) return
-    speech.speak(last.result.answer, { sinceMark: null, onError: (message) => setVoiceError(message) })
+  // Play any message's answer on demand (per-message action row). Uses the same
+  // playback path as voice auto-play; speak() replaces any current playback.
+  function handlePlay(text: string) {
+    speech.speak(text, { sinceMark: null, onError: (message) => setVoiceError(message) })
   }
 
   const hasDocuments = documents.length > 0
@@ -379,29 +379,6 @@ export default function Page() {
   }))
 
   const externalPhase: ExternalPhase = speech.speaking ? "speaking" : loading ? "thinking" : "idle"
-
-  const latestSpeechControls =
-    turns.length > 0 && lastTurn?.result ? (
-      speech.speaking ? (
-        <button
-          type="button"
-          onClick={speech.stop}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-        >
-          <Square className="size-3 fill-current" />
-          Stop
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={handlePlayLatest}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-        >
-          <Volume2 className="size-3.5" />
-          Play answer
-        </button>
-      )
-    ) : null
 
   return (
     <div className="flex min-h-svh bg-background">
@@ -483,7 +460,7 @@ export default function Page() {
           ) : (
             <>
               <div className="border-b border-border/60 bg-background/90 px-4 py-3 backdrop-blur md:sticky md:top-0 md:z-10">
-                <div className="mx-auto w-full max-w-[640px]">
+                <div className="mx-auto w-full max-w-[720px]">
                   <h1 className="mb-2 hidden truncate text-base font-semibold tracking-tight md:block">
                     {activeChat.title}
                   </h1>
@@ -495,17 +472,13 @@ export default function Page() {
                 </div>
               </div>
 
-              <div className="mx-auto w-full max-w-[640px] flex-1 px-4 pt-6 pb-[19rem]">
+              <div className="mx-auto w-full max-w-[720px] flex-1 px-4 pt-6 pb-[19rem]">
                 {turns.length === 0 ? (
                   <p className="py-16 text-center text-sm text-muted-foreground text-pretty">
                     Tap the mic below and ask your first question.
                   </p>
                 ) : (
-                  <Conversation
-                    turns={turns}
-                    documents={documents}
-                    latestSpeechControls={latestSpeechControls}
-                  />
+                  <Conversation turns={turns} documents={documents} onPlay={handlePlay} />
                 )}
 
                 <div className="mt-6">
@@ -515,7 +488,7 @@ export default function Page() {
               </div>
 
               <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur md:left-[260px]">
-                <div className="mx-auto flex max-w-[640px] flex-col gap-4 px-4 pb-5 pt-4">
+                <div className="mx-auto flex max-w-[720px] flex-col gap-4 px-4 pb-5 pt-4">
                   <VoiceControls
                     key={activeId}
                     disabled={!hasDocuments}
