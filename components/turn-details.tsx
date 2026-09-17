@@ -1,11 +1,10 @@
 "use client"
 
-// Collapsed "Details" for a single answer card: that turn's timing, tokens and
-// cost, plus its failed attempt (when unverified) and a "Copy as Markdown row"
-// action.
+// The "Details" panel for a single turn: that turn's timing, tokens and cost,
+// plus its failed attempt (when unverified) and a "Copy as Markdown row" action.
+// Visibility is controlled by the parent's actions row via the `open` prop.
 
 import { useState } from "react"
-import { ChevronDown } from "lucide-react"
 import type { ConversationTurn } from "@/lib/types"
 import { rowFor } from "@/lib/test-log"
 
@@ -52,27 +51,14 @@ function CopyRowButton({ turn }: { turn: ConversationTurn }) {
   )
 }
 
-export function TurnDetails({ turn }: { turn: ConversationTurn }) {
-  const [open, setOpen] = useState(false)
+export function TurnDetails({ turn, open }: { turn: ConversationTurn; open: boolean }) {
   const m = turn.metrics
-  if (!m) return null
+  if (!m || !open) return null
 
   const isVoice = turn.inputMode === "voice"
 
   return (
-    <div className="mt-3 border-t border-border/70 pt-2">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ChevronDown className={`size-3.5 transition-transform ${open ? "rotate-0" : "-rotate-90"}`} />
-        Details
-      </button>
-
-      {open && (
-        <div className="mt-3 flex flex-col gap-4">
+    <div className="flex flex-col gap-4 rounded-lg border border-border bg-muted/30 p-3">
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
             <Metric
               label="Model"
@@ -136,8 +122,6 @@ export function TurnDetails({ turn }: { turn: ConversationTurn }) {
           <div>
             <CopyRowButton turn={turn} />
           </div>
-        </div>
-      )}
     </div>
   )
 }
