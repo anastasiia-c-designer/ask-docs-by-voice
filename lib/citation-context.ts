@@ -152,3 +152,41 @@ export function citationContextBefore(
   const slice = before.slice(-maxChars).replace(/^\s+/, "")
   return (truncated ? "…" : "") + slice
 }
+
+// The full text of a cited page with running headers/footers stripped (same
+// display logic as the context above), plus the character range of the cited
+// quote within that text so the UI can highlight and scroll to it. `matchStart`
+// is -1 when the quote can't be located. Returns null when the page is missing.
+export interface PageHighlight {
+  text: string
+  matchStart: number
+  matchEnd: number
+}
+
+export function citationPageHighlight(
+  documents: ManualDocument[],
+  fileName: string,
+  page: number,
+  quote: string,
+): PageHighlight | null {
+  const doc = documents.find((d) => d.fileName === fileName)
+  const pageText = doc?.pages.find((p) => p.pageNumber === page)?.text
+  if (!pageText) return null
+
+  const straightened = straighten(pageText)
+  const text = stripBoilerplate(straightened, boilerplateFor(documents, fileName))
+
+  const normalizedQuote = straighten(quote).trim().replace(/\s+/g, " ")
+  if (!normalizedQuote) return { text, matchStart: -1, matchEnd: -1 }
+
+  const pattern = normalizedQuote.split(" ").map(escapeRegExp).join("\\s+")
+  let match: RegExpExecArray | null = null
+  try {
+    match = new RegExp(pattern, "i").exec(text)
+  } catch {
+    match = null
+  }
+  if (!match) return { text, matchStart: -1, matchEnd: -1 }
+
+  return { text, matchStart: match.index, matchEnd: match.index + match[0].length }
+}

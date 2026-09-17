@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { Upload, FileText, RefreshCw, Mic, Quote } from "lucide-react"
+import { Upload, FileText, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { extractPdf, countPages, ScannedPdfError } from "@/lib/pdf"
 import type { ManualDocument } from "@/lib/types"
@@ -13,15 +13,9 @@ const SAMPLE_FILES = ["/samples/brisa-manual-v1.pdf", "/samples/brisa-warranty.p
 
 interface DocumentUploaderProps {
   documents: ManualDocument[]
-  onDocumentsReady: (documents: ManualDocument[], ingestionMs: number) => void
+  onDocumentsReady: (documents: ManualDocument[], ingestionMs: number, title: string) => void
   onReplace: () => void
 }
-
-const STEPS = [
-  { title: "Upload a manual", body: "Add one or two text-based PDFs.", Icon: Upload },
-  { title: "Ask out loud", body: "Tap the mic and speak your question.", Icon: Mic },
-  { title: "Get the exact quote", body: "Hear the answer with its page reference.", Icon: Quote },
-]
 
 export function DocumentUploader({ documents, onDocumentsReady, onReplace }: DocumentUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -43,10 +37,11 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
     setLoading(true)
     const start = performance.now()
     try {
-      const parsed: ManualDocument[] = []
+      const extracted = []
       for (const file of files) {
-        parsed.push(await extractPdf(file))
+        extracted.push(await extractPdf(file))
       }
+      const parsed: ManualDocument[] = extracted.map((e) => e.document)
 
       const totalPages = countPages(parsed)
       if (totalPages > MAX_PAGES) {
@@ -58,7 +53,8 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
       }
 
       const ingestionMs = performance.now() - start
-      onDocumentsReady(parsed, ingestionMs)
+      // Chat title comes from the first loaded file.
+      onDocumentsReady(parsed, ingestionMs, extracted[0]?.title ?? "")
     } catch (err) {
       if (err instanceof ScannedPdfError) {
         setError(`${err.message} Try exporting it as a text-based PDF.`)
@@ -124,26 +120,10 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
     )
   }
 
-  // Empty state: 3-step explanation, upload area, sample shortcut.
+  // Empty state: upload area + sample shortcut. The heading/intro live in the
+  // page's empty state above this component.
   return (
     <div className="flex flex-col gap-6">
-      <ol className="grid gap-3 sm:grid-cols-3">
-        {STEPS.map((step, i) => (
-          <li key={step.title} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2">
-              <span className="flex size-6 items-center justify-center rounded-full bg-accent text-accent-foreground">
-                <step.Icon className="size-3.5" aria-hidden />
-              </span>
-              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Step {i + 1}
-              </span>
-            </div>
-            <p className="text-sm font-medium text-foreground">{step.title}</p>
-            <p className="text-xs leading-relaxed text-muted-foreground text-pretty">{step.body}</p>
-          </li>
-        ))}
-      </ol>
-
       <div className="flex flex-col gap-3">
         <button
           type="button"
