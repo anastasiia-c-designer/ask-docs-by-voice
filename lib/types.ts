@@ -66,11 +66,51 @@ export interface QaTurn {
 export type InputMode = "voice" | "text"
 
 // A single question/answer in the current session, for on-screen history.
+// The transcript/question shows immediately; `pending` is true while the answer
+// is still being fetched (the card shows a skeleton). Per-turn debug data lives
+// on the turn so each card can show its own collapsed Details.
 export interface ConversationTurn {
   id: string
   question: string
   inputMode: InputMode
-  result: AnswerResult
+  pending: boolean
+  result: AnswerResult | null
+  error: string | null
+  model: string | null
+  reasoningEffort: string | null
+  verificationMs: number | null
+  failedAttempt: FailedAttempt | null
+  metrics: TestLogEntry | null
+}
+
+// One recorded answer, holding everything the test-log rows need. Voice fields
+// are null for typed questions.
+export interface TestLogEntry {
+  id: string
+  question: string
+  inputMode: InputMode
+  status: AnswerStatus
+  answer: string
+  citations: Citation[]
+  verified: boolean
+  attempts: number
+  totalMs: number
+  openAiMs: number
+  inputTokens: number
+  cachedTokens: number
+  cacheWriteTokens: number
+  outputTokens: number
+  modelCostUsd: number | null
+  // Voice-only measurements (null for typed questions).
+  recordingSeconds: number | null
+  transcriptionMs: number | null
+  askMs: number | null
+  ttsMs: number | null
+  questionToFirstAudioMs: number | null
+  ttsSeconds: number | null
+  transcriptionUsd: number | null
+  ttsUsd: number | null
+  totalCostUsd: number | null
 }
 
 // Response shape returned by POST /api/transcribe.

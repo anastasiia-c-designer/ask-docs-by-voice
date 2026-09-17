@@ -1,13 +1,12 @@
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Square, Volume2 } from "lucide-react"
 import { DocumentUploader } from "@/components/document-uploader"
 import { QuestionInput } from "@/components/question-input"
 import { Conversation } from "@/components/conversation"
-import { VoiceControls, type VoiceResult } from "@/components/voice-controls"
-import { DebugPanel, type TestLogEntry } from "@/components/debug-panel"
-import { Button } from "@/components/ui/button"
+import { VoiceControls, type VoiceResult, type ExternalPhase } from "@/components/voice-controls"
+import { TestLog } from "@/components/test-log"
 import {
   computeCostUsd,
   computeTranscriptionCostUsd,
@@ -20,11 +19,9 @@ import type {
   AnswerResult,
   AskResponse,
   ConversationTurn,
-  FailedAttempt,
   ManualDocument,
   QaTurn,
-  Timing,
-  TokenUsage,
+  TestLogEntry,
 } from "@/lib/types"
 
 const MAX_HISTORY_TURNS = 6
@@ -43,37 +40,35 @@ function sumCosts(parts: (number | null)[]): number | null {
   return known.length ? known.reduce((a, b) => a + b, 0) : null
 }
 
+function newId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random()}`
+}
+
 export default function Page() {
   const [documents, setDocuments] = useState<ManualDocument[]>([])
   const [turns, setTurns] = useState<ConversationTurn[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-
   const [ingestionMs, setIngestionMs] = useState<number | null>(null)
-  const [timing, setTiming] = useState<Timing | null>(null)
-  const [usage, setUsage] = useState<TokenUsage | null>(null)
-  const [model, setModel] = useState<string | null>(null)
-  const [reasoningEffort, setReasoningEffort] = useState<string | null>(null)
-  const [failedAttempt, setFailedAttempt] = useState<FailedAttempt | null>(null)
-  const [log, setLog] = useState<TestLogEntry[]>([])
 
   const speech = useSpeech()
   const latestAnswerRef = useRef<string | null>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
 
   const hintTerms = useMemo(() => extractHintTerms(documents), [documents])
+
+  const lastTurn = turns[turns.length - 1]
+  // Auto-scroll to the newest turn as it appears and as its answer resolves.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+  }, [turns.length, lastTurn?.pending])
 
   function resetSession() {
     speech.stop()
     setTurns([])
-    setError(null)
-    setNotice(null)
-    setTiming(null)
-    setUsage(null)
-    setModel(null)
-    setReasoningEffort(null)
-    setFailedAttempt(null)
-    setLog([])
+    setVoiceError(null)
     latestAnswerRef.current = null
   }
 
@@ -89,19 +84,42 @@ export default function Page() {
     resetSession()
   }
 
-  function patchEntry(id: string, fn: (entry: TestLogEntry) => TestLogEntry) {
-    setLog((prev) => prev.map((entry) => (entry.id === id ? fn(entry) : entry)))
+  function patchTurn(id: string, fn: (turn: ConversationTurn) => ConversationTurn) {
+    setTurns((prev) => prev.map((t) => (t.id === id ? fn(t) : t)))
+  }
+
+  function patchMetrics(id: string, fn: (m: TestLogEntry) => TestLogEntry) {
+    setTurns((prev) =>
+      prev.map((t) => (t.id === id && t.metrics ? { ...t, metrics: fn(t.metrics) } : t)),
+    )
   }
 
   async function runAsk(question: string, voice: VoiceMeta | null) {
-    setLoading(true)
-    setError(null)
-    setNotice(null)
-    setFailedAttempt(null)
-
     const history: QaTurn[] = turns
       .slice(-MAX_HISTORY_TURNS)
+      .filter((t): t is ConversationTurn & { result: AnswerResult } => t.result !== null)
       .map((t) => ({ question: t.question, answer: t.result.answer }))
+
+    const id = newId()
+    // Show the transcript immediately with a skeleton for the pending answer.
+    setTurns((prev) => [
+      ...prev,
+      {
+        id,
+        question,
+        inputMode: voice ? "voice" : "text",
+        pending: true,
+        result: null,
+        error: null,
+        model: null,
+        reasoningEffort: null,
+        verificationMs: null,
+        failedAttempt: null,
+        metrics: null,
+      },
+    ])
+    setLoading(true)
+    setVoiceError(null)
 
     const askStart = performance.now()
     let data: AskResponse
@@ -113,13 +131,21 @@ export default function Page() {
       })
       if (!res.ok) {
         const d = await res.json().catch(() => null)
-        setError(d?.error ?? `Request failed with status ${res.status}.`)
+        patchTurn(id, (t) => ({
+          ...t,
+          pending: false,
+          error: d?.error ?? `Request failed with status ${res.status}.`,
+        }))
         setLoading(false)
         return
       }
       data = (await res.json()) as AskResponse
     } catch (err) {
-      setError(err instanceof Error ? err.message : "The request failed.")
+      patchTurn(id, (t) => ({
+        ...t,
+        pending: false,
+        error: err instanceof Error ? err.message : "The request failed.",
+      }))
       setLoading(false)
       return
     }
@@ -130,18 +156,6 @@ export default function Page() {
       answer: data.answer,
       citations: data.citations,
     }
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random()}`
-
-    setTurns((prev) => [...prev, { id, question, inputMode: voice ? "voice" : "text", result }])
-    setUsage(data.usage ?? null)
-    setTiming(data.timing)
-    setModel(data.model)
-    setReasoningEffort(data.reasoningEffort ?? null)
-    setFailedAttempt(data.failedAttempt ?? null)
-    latestAnswerRef.current = data.answer
 
     const modelCostUsd =
       data.usage && data.model
@@ -157,7 +171,7 @@ export default function Page() {
       ? computeTranscriptionCostUsd(voice.transcriptionModel, voice.recordingSeconds)
       : null
 
-    const entry: TestLogEntry = {
+    const metrics: TestLogEntry = {
       id,
       question,
       inputMode: voice ? "voice" : "text",
@@ -183,27 +197,38 @@ export default function Page() {
       ttsUsd: null,
       totalCostUsd: sumCosts([modelCostUsd, transcriptionUsd]),
     }
-    setLog((prev) => [...prev, entry])
+
+    patchTurn(id, (t) => ({
+      ...t,
+      pending: false,
+      result,
+      model: data.model,
+      reasoningEffort: data.reasoningEffort ?? null,
+      verificationMs: data.timing.verificationMs,
+      failedAttempt: data.failedAttempt ?? null,
+      metrics,
+    }))
+    latestAnswerRef.current = data.answer
     setLoading(false)
 
-    // Speak the answer. Voice questions auto-play and record voice timing/cost;
-    // typed questions are spoken only on demand via the Play button.
+    // Voice questions auto-play and record voice timing/cost; typed questions
+    // are spoken only on demand via the Play button.
     if (voice) {
       speech.speak(data.answer, {
         sinceMark: voice.recordingStopAt,
         onPlaying: ({ ttsMs, questionToFirstAudioMs }) =>
-          patchEntry(id, (e) => ({ ...e, ttsMs, questionToFirstAudioMs })),
+          patchMetrics(id, (m) => ({ ...m, ttsMs, questionToFirstAudioMs })),
         onDuration: (seconds) =>
-          patchEntry(id, (e) => {
+          patchMetrics(id, (m) => {
             const ttsUsd = computeTtsCostUsd(DEFAULT_TTS_MODEL, seconds)
             return {
-              ...e,
+              ...m,
               ttsSeconds: seconds,
               ttsUsd,
-              totalCostUsd: sumCosts([e.modelCostUsd, e.transcriptionUsd, ttsUsd]),
+              totalCostUsd: sumCosts([m.modelCostUsd, m.transcriptionUsd, ttsUsd]),
             }
           }),
-        onError: (message) => setError(message),
+        onError: (message) => setVoiceError(message),
       })
     }
   }
@@ -219,104 +244,118 @@ export default function Page() {
   }
 
   function handleDidNotCatch() {
-    setNotice(DID_NOT_CATCH)
+    setVoiceError("I didn’t catch that. Tap the mic to try again.")
     latestAnswerRef.current = DID_NOT_CATCH
     speech.speak(DID_NOT_CATCH, { sinceMark: null })
   }
 
   function handleRecordingStart() {
     speech.stop()
-    setNotice(null)
-    setError(null)
+    setVoiceError(null)
   }
 
   function handlePlayLatest() {
     const text = latestAnswerRef.current
     if (!text) return
-    speech.speak(text, { sinceMark: null, onError: (message) => setError(message) })
+    speech.speak(text, { sinceMark: null, onError: (message) => setVoiceError(message) })
   }
 
   const hasDocuments = documents.length > 0
+  const logEntries = turns
+    .map((t) => t.metrics)
+    .filter((m): m is TestLogEntry => m !== null)
+
+  const externalPhase: ExternalPhase = speech.speaking ? "speaking" : loading ? "thinking" : "idle"
 
   const latestSpeechControls =
-    turns.length > 0 ? (
+    turns.length > 0 && lastTurn?.result ? (
       speech.speaking ? (
-        <Button variant="outline" size="sm" onClick={speech.stop}>
-          <Square className="mr-1.5 size-3.5" />
+        <button
+          type="button"
+          onClick={speech.stop}
+          className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+        >
+          <Square className="size-3 fill-current" />
           Stop
-        </Button>
+        </button>
       ) : (
-        <Button variant="outline" size="sm" onClick={handlePlayLatest}>
-          <Volume2 className="mr-1.5 size-3.5" />
+        <button
+          type="button"
+          onClick={handlePlayLatest}
+          className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+        >
+          <Volume2 className="size-3.5" />
           Play answer
-        </Button>
+        </button>
       )
     ) : null
 
   return (
-    <main className="mx-auto flex min-h-svh max-w-2xl flex-col gap-6 px-4 py-10">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold text-balance">Ask your manual</h1>
-        <p className="text-sm text-muted-foreground text-pretty">
-          Upload equipment manuals and ask by voice or text. Answers are grounded only in what the
-          documents actually say, with a verbatim quote and page reference, and read back aloud.
+    <main className="mx-auto flex min-h-svh max-w-[640px] flex-col px-4">
+      <header className="flex flex-col gap-1 pt-8 pb-6">
+        <h1 className="text-xl font-semibold tracking-tight text-balance">Ask your manual</h1>
+        <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
+          Ask your equipment manuals by voice or text. Every answer is grounded only in what the
+          documents say, with a verbatim quote and page reference, read back aloud.
         </p>
       </header>
 
-      <DocumentUploader
-        documents={documents}
-        onDocumentsReady={handleDocumentsReady}
-        onReplace={handleReplace}
-      />
-
-      <Conversation
-        turns={turns}
-        documents={documents}
-        latestSpeechControls={latestSpeechControls}
-      />
-
-      {notice && (
-        <div role="status" className="rounded-lg border border-border bg-card p-4">
-          <p className="text-sm text-card-foreground">{notice}</p>
-        </div>
-      )}
-
-      {error && (
-        <div role="alert" className="rounded-lg border border-destructive/40 bg-card p-4">
-          <p className="text-sm font-medium text-destructive">Something went wrong</p>
-          <p className="mt-1 text-sm text-muted-foreground">{error}</p>
-        </div>
-      )}
-
-      {hasDocuments && (
-        <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4">
-          <VoiceControls
-            disabled={!hasDocuments}
-            busy={loading}
-            hintTerms={hintTerms}
-            onRecordingStart={handleRecordingStart}
-            onResult={handleVoiceResult}
-            onEmpty={handleDidNotCatch}
-            onError={(message) => setError(message)}
+      {!hasDocuments ? (
+        <div className="pb-10">
+          <DocumentUploader
+            documents={documents}
+            onDocumentsReady={handleDocumentsReady}
+            onReplace={handleReplace}
           />
-          <div className="flex items-center gap-3">
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">or type</span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
-          <QuestionInput onAsk={(q) => runAsk(q, null)} disabled={!hasDocuments} loading={loading} />
         </div>
-      )}
+      ) : (
+        <>
+          <div className="sticky top-0 z-10 -mx-4 border-b border-border/60 bg-background/90 px-4 pb-3 pt-1 backdrop-blur">
+            <DocumentUploader
+              documents={documents}
+              onDocumentsReady={handleDocumentsReady}
+              onReplace={handleReplace}
+            />
+          </div>
 
-      <DebugPanel
-        ingestionMs={ingestionMs}
-        timing={timing}
-        usage={usage}
-        model={model}
-        reasoningEffort={reasoningEffort}
-        failedAttempt={failedAttempt}
-        log={log}
-      />
+          <div className="flex-1 pt-6 pb-[19rem]">
+            {turns.length === 0 ? (
+              <p className="py-16 text-center text-sm text-muted-foreground text-pretty">
+                Tap the mic below and ask your first question.
+              </p>
+            ) : (
+              <Conversation
+                turns={turns}
+                documents={documents}
+                latestSpeechControls={latestSpeechControls}
+              />
+            )}
+
+            <div className="mt-6">
+              <TestLog entries={logEntries} ingestionMs={ingestionMs} />
+            </div>
+            <div ref={bottomRef} />
+          </div>
+
+          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur">
+            <div className="mx-auto flex max-w-[640px] flex-col gap-4 px-4 pb-5 pt-4">
+              <VoiceControls
+                disabled={!hasDocuments}
+                hintTerms={hintTerms}
+                externalPhase={externalPhase}
+                errorMessage={voiceError}
+                onRecordingStart={handleRecordingStart}
+                onResult={handleVoiceResult}
+                onEmpty={handleDidNotCatch}
+                onError={(message) => setVoiceError(message)}
+                onStopSpeaking={speech.stop}
+                onRetry={() => setVoiceError(null)}
+              />
+              <QuestionInput onAsk={(q) => runAsk(q, null)} disabled={loading} loading={loading} />
+            </div>
+          </div>
+        </>
+      )}
     </main>
   )
 }

@@ -1,12 +1,10 @@
 "use client"
 
-// Swappable input surface. A later step will add a voice-based variant that
-// exposes the same onAsk(question) contract, so keep this component's public
-// interface stable and free of answer-rendering concerns.
+// Compact text fallback for the voice-first dock. Same public onAsk(question)
+// contract as before, restyled to a single-line input with a send button.
 
 import { useState } from "react"
-import { Send } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ArrowUp } from "lucide-react"
 
 interface QuestionInputProps {
   onAsk: (question: string) => void
@@ -25,9 +23,9 @@ export function QuestionInput({ onAsk, disabled, loading }: QuestionInputProps) 
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex items-end gap-2">
       <label htmlFor="question" className="sr-only">
-        Ask a question about your manuals
+        Type a question about your manuals
       </label>
       <textarea
         id="question"
@@ -40,20 +38,20 @@ export function QuestionInput({ onAsk, disabled, loading }: QuestionInputProps) 
             submit()
           }
         }}
-        placeholder="Ask a question about your manuals…"
-        rows={3}
+        placeholder="Type a question instead…"
+        rows={1}
         disabled={disabled}
-        className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+        className="max-h-32 min-h-10 w-full resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-60"
       />
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          Press Enter to ask, Shift+Enter for a new line.
-        </span>
-        <Button onClick={submit} disabled={disabled || loading || !value.trim()}>
-          <Send className="mr-1.5 size-3.5" />
-          {loading ? "Asking…" : "Ask"}
-        </Button>
-      </div>
+      <button
+        type="button"
+        onClick={submit}
+        disabled={disabled || loading || !value.trim()}
+        aria-label="Send question"
+        className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
+      >
+        <ArrowUp className="size-4" />
+      </button>
     </div>
   )
 }
