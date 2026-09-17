@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Menu, X } from "lucide-react"
 import { DocumentUploader } from "@/components/document-uploader"
+import { DocumentsMenu } from "@/components/documents-menu"
 import { Conversation } from "@/components/conversation"
 import { VoiceControls, type VoiceResult, type ExternalPhase } from "@/components/voice-controls"
 import { ChatSidebar, type ChatSummary } from "@/components/chat-sidebar"
@@ -54,6 +55,17 @@ interface Chat {
   // True only when the documents came from "Try sample manuals"; gates the
   // suggested starter questions.
   fromSample: boolean
+  // Set once the user renames the chat by hand. A manual name always wins and is
+  // never overwritten when documents are (re)loaded.
+  titleManual: boolean
+}
+
+// Chat title = first file's name without ".pdf", plus " +1" when a second file
+// is loaded alongside it.
+function deriveTitle(docs: ManualDocument[]): string {
+  const first = docs[0]?.fileName ?? ""
+  const base = first.replace(/\.pdf$/i, "").slice(0, 60)
+  return docs.length > 1 ? `${base} +1` : base
 }
 
 function sumCosts(parts: (number | null)[]): number | null {
@@ -68,7 +80,15 @@ function newId(): string {
 }
 
 function emptyChat(): Chat {
-  return { id: newId(), title: "New chat", documents: [], turns: [], ingestionMs: null, fromSample: false }
+  return {
+    id: newId(),
+    title: "New chat",
+    documents: [],
+    turns: [],
+    ingestionMs: null,
+    fromSample: false,
+    titleManual: false,
+  }
 }
 
 export default function Page() {
@@ -161,16 +181,16 @@ export default function Page() {
     setDrawerOpen(false)
   }
 
-  function handleDocumentsReady(docs: ManualDocument[], ms: number, title: string, fromSample: boolean) {
+  function handleDocumentsReady(docs: ManualDocument[], ms: number, fromSample: boolean) {
     speech.stop()
     const id = activeIdRef.current
-    const trimmed = title.trim().slice(0, 60)
     updateChat(id, (c) => ({
       ...c,
       documents: docs,
       ingestionMs: ms,
       turns: [],
-      title: trimmed || c.title,
+      // A manual name always wins; otherwise derive from the file names.
+      title: c.titleManual ? c.title : deriveTitle(docs) || c.title,
       fromSample,
     }))
     setVoiceError(null)
@@ -184,10 +204,37 @@ export default function Page() {
       documents: [],
       ingestionMs: null,
       turns: [],
-      title: "New chat",
+      // Keep a manual name across the replace; otherwise reset to the default.
+      title: c.titleManual ? c.title : "New chat",
       fromSample: false,
     }))
     setVoiceError(null)
+  }
+
+  function renameChat(id: string, name: string) {
+    const trimmed = name.trim()
+    if (!trimmed) return // empty value keeps the old name
+    updateChat(id, (c) => ({ ...c, title: trimmed.slice(0, 60), titleManual: true }))
+  }
+
+  function deleteChat(id: string) {
+    const remaining = chats.filter((c) => c.id !== id)
+    if (id === activeId) {
+      speech.stop()
+      setVoiceError(null)
+      setLoading(false)
+      setDrawerOpen(false)
+      if (remaining.length === 0) {
+        // Nothing left: fall back to a fresh empty chat (the empty state).
+        const chat = emptyChat()
+        setChats([chat])
+        setActiveId(chat.id)
+        return
+      }
+      // Switch to the most recent remaining chat (chats are in creation order).
+      setActiveId(remaining[remaining.length - 1].id)
+    }
+    setChats(remaining)
   }
 
   async function runAsk(question: string, voice: VoiceMeta | null, chatId?: string) {
@@ -392,7 +439,6 @@ export default function Page() {
     id: c.id,
     title: c.title,
     documentCount: c.documents.length,
-    questionCount: c.turns.length,
   }))
 
   // The product shell (sidebar + mobile menu) is revealed the first time any
@@ -414,6 +460,8 @@ export default function Page() {
             activeId={activeId}
             onSelect={selectChat}
             onNewChat={newChat}
+            onRename={renameChat}
+            onDelete={deleteChat}
             logEntries={logEntries}
             ingestionMs={ingestionMs}
           />
@@ -444,6 +492,8 @@ export default function Page() {
               activeId={activeId}
               onSelect={selectChat}
               onNewChat={newChat}
+              onRename={renameChat}
+              onDelete={deleteChat}
               logEntries={logEntries}
               ingestionMs={ingestionMs}
             />
@@ -454,7 +504,7 @@ export default function Page() {
       <div className="relative flex min-w-0 flex-1 flex-col">
         {sidebarVisible ? (
           /* Compact mobile header with menu button (mobile only) */
-          <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur md:hidden">
+          <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur md:hidden relative">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
@@ -464,7 +514,10 @@ export default function Page() {
               <Menu className="size-5" />
             </button>
             <LogoMark className="size-6 shrink-0" />
-            <span className="truncate text-sm font-medium text-foreground">{activeChat.title}</span>
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{activeChat.title}</span>
+            {hasDocuments && (
+              <DocumentsMenu documents={documents} onReplace={handleReplace} variant="compact" />
+            )}
           </header>
         ) : (
           /* First-visit header: logo mark + wordmark, not clickable, overlaid
@@ -486,27 +539,14 @@ export default function Page() {
                 </h1>
               </div>
               <div className="mt-8 w-full">
-                <DocumentUploader
-                  documents={documents}
-                  onDocumentsReady={handleDocumentsReady}
-                  onReplace={handleReplace}
-                />
+                <DocumentUploader onDocumentsReady={handleDocumentsReady} />
               </div>
             </div>
           ) : (
             <>
-              <div className="border-b border-border/60 bg-background/90 px-4 py-2.5 backdrop-blur md:sticky md:top-0 md:z-10">
-                <div className="mx-auto flex w-full max-w-[720px] items-center gap-3">
-                  <h1 className="hidden max-w-[45%] shrink-0 truncate text-sm font-semibold tracking-tight md:block">
-                    {activeChat.title}
-                  </h1>
-                  <div className="min-w-0 flex-1">
-                    <DocumentUploader
-                      documents={documents}
-                      onDocumentsReady={handleDocumentsReady}
-                      onReplace={handleReplace}
-                    />
-                  </div>
+              <div className="hidden border-b border-border/60 bg-background/90 px-4 py-2.5 backdrop-blur md:sticky md:top-0 md:z-10 md:block">
+                <div className="mx-auto flex w-full max-w-[720px] items-center justify-end">
+                  <DocumentsMenu documents={documents} onReplace={handleReplace} variant="bar" />
                 </div>
               </div>
 
