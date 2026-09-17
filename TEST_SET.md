@@ -76,3 +76,21 @@ Expected outcomes were defined in planning before these tests were run. Run on t
 | E1 | `test-docs-edge/scanned-manual.pdf` (image-only pages, no text layer) | Rejected as scanned, nothing loaded | "scanned-manual.pdf" looks like a scanned PDF. Only text-based PDFs are supported. | ✓ |
 | E2 | `test-docs-edge/long-manual-11-pages.pdf` | Rejected, over 10-page limit | Too many pages: 11. The maximum is 10 pages across all files. | ✓ |
 | E3 | manual-v1 + warranty + scanned-manual (3 files at once) | Rejected, over 2-file limit | You can upload at most 2 PDF files. | ✓ |
+
+## New testings for TP-Link
+## Real manufacturer manual test
+
+Expected outcomes recorded before testing. The PDF is not included in the repository (manufacturer copyright): 10 pages extracted from the official TP-Link router user guide (printed pages 3, 4, 5, 7, 8, 9, 11, 13, 14, 15). The app cites page numbers within the uploaded file, which differ from the printed page numbers.
+
+| # | Type | Question | Expected answer | File page (printed) |
+|---|---|---|---|---|
+| R1 | Direct fact | How long do I hold the reset button to reset the router? | More than 2 seconds; resets to factory defaults | 3 (5) |
+| R2 | Table lookup | What does it mean if the Internet light is orange? | Internet port connected, but internet service not available | 2 (4) |
+| R3 | Follow-up | And what if it's off? | Internet port is unplugged | 2 (4) |
+| R4 | Multi-page process | How do I connect the router to my modem? | Modem off + remove backup battery; modem to Internet port via Ethernet; modem on, wait ~2 min; power on router; check Power, 2.4G, 5G, Internet LEDs solid | 4 (7), 5 (8) |
+| R5 | Exception | Can I use the WPS button with my iPhone? | No, WPS is not supported by iOS | 5 (8) |
+| R6 | Absent fact | What is the maximum Wi-Fi speed of this router? | Not in the manual | — |
+| R7 | Decline to conclude | What's the default Wi-Fi password? | Not given; SSID and password are on the label at the bottom of the router | 5 (8) |
+| R8 | Inconsistent source | Which button on the router do I press for WPS? | Ideal: mentions both "WPS/Wi-Fi On/Off" and "Reset/WPS". Acceptable: one with a correct citation | 3 (5), 6 (9) |
+| R9 | Comparison | What's the difference between setting up PPPoE and PPTP? | PPPoE: ISP username and password. PPTP: username, password and Secondary Connection | 9 (14), 10 (15) |
+| R10 | Ambiguity (new chat) | What do I need to enter in the internet settings? | Asks which connection type, or answers per type with citations | 8–10 |
