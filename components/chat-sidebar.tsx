@@ -1,11 +1,13 @@
 "use client"
 
 // The product-shell sidebar: brand, a New chat button, the in-memory chat list,
-// and a footer note. Rendered both as the fixed desktop rail and inside the
-// mobile slide-in drawer.
+// and a Test log entry in the footer. Rendered both as the fixed desktop rail
+// and inside the mobile slide-in drawer.
 
 import { Plus } from "lucide-react"
 import { LogoMark } from "@/components/logo"
+import { TestLog } from "@/components/test-log"
+import type { TestLogEntry } from "@/lib/types"
 
 export interface ChatSummary {
   id: string
@@ -19,6 +21,8 @@ interface ChatSidebarProps {
   activeId: string
   onSelect: (id: string) => void
   onNewChat: () => void
+  logEntries: TestLogEntry[]
+  ingestionMs: number | null
 }
 
 function summaryLine(documentCount: number, questionCount: number): string {
@@ -27,7 +31,14 @@ function summaryLine(documentCount: number, questionCount: number): string {
   return `${docs} · ${qs}`
 }
 
-export function ChatSidebar({ chats, activeId, onSelect, onNewChat }: ChatSidebarProps) {
+export function ChatSidebar({
+  chats,
+  activeId,
+  onSelect,
+  onNewChat,
+  logEntries,
+  ingestionMs,
+}: ChatSidebarProps) {
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
       <div className="flex items-center gap-2 px-4 pt-5 pb-4">
@@ -84,11 +95,11 @@ export function ChatSidebar({ chats, activeId, onSelect, onNewChat }: ChatSideba
         </ul>
       </nav>
 
-      <div className="border-t border-sidebar-border px-4 py-3">
-        <p className="text-[11px] leading-relaxed text-muted-foreground text-pretty">
-          Chats and documents stay in this tab only. Nothing is stored.
-        </p>
-      </div>
+      {(logEntries.length > 0 || ingestionMs !== null) && (
+        <div className="border-t border-sidebar-border px-4 py-3">
+          <TestLog entries={logEntries} ingestionMs={ingestionMs} />
+        </div>
+      )}
     </div>
   )
 }

@@ -5,7 +5,6 @@ import { Menu, X } from "lucide-react"
 import { DocumentUploader } from "@/components/document-uploader"
 import { Conversation } from "@/components/conversation"
 import { VoiceControls, type VoiceResult, type ExternalPhase } from "@/components/voice-controls"
-import { TestLog } from "@/components/test-log"
 import { ChatSidebar, type ChatSummary } from "@/components/chat-sidebar"
 import { LogoMark } from "@/components/logo"
 import {
@@ -28,6 +27,14 @@ import type {
 const MAX_HISTORY_TURNS = 6
 const DID_NOT_CATCH = "I didn't catch that. Please try again."
 
+// Fixed starter questions shown only for the bundled sample manuals. These are
+// hard-coded (never model-generated) and disappear once the chat has a turn.
+const SAMPLE_QUESTIONS = [
+  "What room size is the AP-200 for?",
+  "Can I run the AP-400 on Turbo all night?",
+  "How much does the AP-400 weigh?",
+]
+
 // Voice metadata attached to a question that came from speech.
 interface VoiceMeta {
   transcriptionModel: string
@@ -44,6 +51,9 @@ interface Chat {
   documents: ManualDocument[]
   turns: ConversationTurn[]
   ingestionMs: number | null
+  // True only when the documents came from "Try sample manuals"; gates the
+  // suggested starter questions.
+  fromSample: boolean
 }
 
 function sumCosts(parts: (number | null)[]): number | null {
@@ -58,7 +68,7 @@ function newId(): string {
 }
 
 function emptyChat(): Chat {
-  return { id: newId(), title: "New chat", documents: [], turns: [], ingestionMs: null }
+  return { id: newId(), title: "New chat", documents: [], turns: [], ingestionMs: null, fromSample: false }
 }
 
 export default function Page() {
@@ -151,7 +161,7 @@ export default function Page() {
     setDrawerOpen(false)
   }
 
-  function handleDocumentsReady(docs: ManualDocument[], ms: number, title: string) {
+  function handleDocumentsReady(docs: ManualDocument[], ms: number, title: string, fromSample: boolean) {
     speech.stop()
     const id = activeIdRef.current
     const trimmed = title.trim().slice(0, 60)
@@ -161,6 +171,7 @@ export default function Page() {
       ingestionMs: ms,
       turns: [],
       title: trimmed || c.title,
+      fromSample,
     }))
     setVoiceError(null)
   }
@@ -174,6 +185,7 @@ export default function Page() {
       ingestionMs: null,
       turns: [],
       title: "New chat",
+      fromSample: false,
     }))
     setVoiceError(null)
   }
@@ -366,6 +378,8 @@ export default function Page() {
   }
 
   const hasDocuments = documents.length > 0
+  // Starter pills: only for sample-loaded chats, and only before the first turn.
+  const showSuggestions = hasDocuments && activeChat.fromSample && turns.length === 0
   const logEntries = turns
     .map((t) => t.metrics)
     .filter((m): m is TestLogEntry => m !== null)
@@ -388,6 +402,8 @@ export default function Page() {
           activeId={activeId}
           onSelect={selectChat}
           onNewChat={newChat}
+          logEntries={logEntries}
+          ingestionMs={ingestionMs}
         />
       </aside>
 
@@ -415,6 +431,8 @@ export default function Page() {
               activeId={activeId}
               onSelect={selectChat}
               onNewChat={newChat}
+              logEntries={logEntries}
+              ingestionMs={ingestionMs}
             />
           </aside>
         </div>
@@ -444,10 +462,6 @@ export default function Page() {
                   <span className="block font-light text-foreground">Ask your manual</span>
                   <span className="block font-bold text-foreground">out loud.</span>
                 </h1>
-                <p className="max-w-md text-sm leading-relaxed text-muted-foreground text-pretty">
-                  Upload up to 2 text-based PDFs, 10 pages total. Every answer comes with the exact
-                  quote and page.
-                </p>
               </div>
               <div className="mt-8 w-full">
                 <DocumentUploader
@@ -483,14 +497,30 @@ export default function Page() {
                   <Conversation turns={turns} documents={documents} onPlay={handlePlay} />
                 )}
 
-                <div className="mt-6">
-                  <TestLog entries={logEntries} ingestionMs={ingestionMs} />
-                </div>
                 <div ref={bottomRef} />
               </div>
 
-              <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur md:left-[260px]">
+              <div className="fixed inset-x-0 bottom-0 z-20 bg-background/95 backdrop-blur md:left-[260px]">
+                {/* Fade from the scrolling conversation into the composer. */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 -top-8 h-8 bg-gradient-to-b from-transparent to-background"
+                />
                 <div className="mx-auto max-w-[720px] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                  {showSuggestions && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {SAMPLE_QUESTIONS.map((q) => (
+                        <button
+                          key={q}
+                          type="button"
+                          onClick={() => runAsk(q, null)}
+                          className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <VoiceControls
                     key={activeId}
                     disabled={!hasDocuments}
