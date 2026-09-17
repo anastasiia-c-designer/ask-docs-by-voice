@@ -62,6 +62,22 @@ interface Chat {
   // even after "Replace documents" clears them, so the chat keeps counting as an
   // existing chat in the sidebar.
   everHadDocuments: boolean
+  // A one-off system notice shown at the top of the conversation after documents
+  // are replaced in a chat that had messages. Not a ConversationTurn: never sent
+  // to the model and never in the test log.
+  replaceNotice: string | null
+  // Bridges "Replace documents" (which clears the turns) to the subsequent
+  // document load: records that the just-cleared conversation had at least one
+  // message, so the notice is shown only in that case.
+  pendingReplaceHadMessages: boolean
+}
+
+// Natural-language join of the loaded file names for the replace notice.
+function formatFileNames(docs: ManualDocument[]): string {
+  const names = docs.map((d) => d.fileName)
+  if (names.length <= 1) return names[0] ?? ""
+  if (names.length === 2) return `${names[0]} and ${names[1]}`
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`
 }
 
 // Chat title = first file's name without ".pdf", plus " +1" when a second file
@@ -93,6 +109,8 @@ function emptyChat(): Chat {
     fromSample: false,
     titleManual: false,
     everHadDocuments: false,
+    replaceNotice: null,
+    pendingReplaceHadMessages: false,
   }
 }
 
@@ -198,6 +216,11 @@ export default function Page() {
       title: c.titleManual ? c.title : deriveTitle(docs) || c.title,
       fromSample,
       everHadDocuments: true,
+      // Only surface the replace notice when the prior conversation had messages.
+      replaceNotice: c.pendingReplaceHadMessages
+        ? `Documents replaced with ${formatFileNames(docs)}. Earlier answers came from the previous documents, so the conversation was cleared.`
+        : null,
+      pendingReplaceHadMessages: false,
     }))
     setVoiceError(null)
   }
@@ -213,6 +236,10 @@ export default function Page() {
       // Keep a manual name across the replace; otherwise reset to the default.
       title: c.titleManual ? c.title : "New chat",
       fromSample: false,
+      // Clear any prior notice while empty; remember whether this replace cleared
+      // a non-empty conversation so the next load can show the notice.
+      replaceNotice: null,
+      pendingReplaceHadMessages: c.turns.length > 0,
     }))
     setVoiceError(null)
   }
@@ -558,6 +585,15 @@ export default function Page() {
               </div>
 
               <div className="mx-auto w-full max-w-[720px] flex-1 px-4 pt-6 pb-40">
+                {activeChat.replaceNotice && (
+                  <div role="note" className="mb-6 flex items-center gap-3">
+                    <span aria-hidden className="h-px flex-1 bg-border" />
+                    <span className="max-w-[80%] text-center text-xs leading-relaxed text-muted-foreground text-pretty">
+                      {activeChat.replaceNotice}
+                    </span>
+                    <span aria-hidden className="h-px flex-1 bg-border" />
+                  </div>
+                )}
                 {turns.length > 0 && (
                   <Conversation turns={turns} documents={documents} onPlay={handlePlay} />
                 )}
