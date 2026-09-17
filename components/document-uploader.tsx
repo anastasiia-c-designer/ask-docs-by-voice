@@ -152,7 +152,7 @@ export function DocumentUploader({ documents, onDocumentsReady, onReplace }: Doc
             type="button"
             onClick={loadSamples}
             disabled={loading}
-            className="rounded-full bg-brand-soft px-4 py-2 text-sm font-medium text-brand transition-colors hover:bg-brand-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+            className="rounded-full bg-brand-soft px-4 py-2 text-sm font-medium text-accent-strong transition-colors hover:bg-brand-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
           >
             Try sample manuals
           </button>

@@ -265,7 +265,7 @@ function CitationCard({
       {context && (
         <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{context}</p>
       )}
-      <blockquote className="mt-1.5 border-l-[3px] border-brand bg-brand/5 py-1.5 pl-3 text-sm leading-relaxed text-foreground">
+      <blockquote className="mt-1.5 border-l-[3px] border-accent-strong bg-accent-strong/5 py-1.5 pl-3 text-sm leading-relaxed text-foreground">
         {citation.quote}
       </blockquote>
 
@@ -273,7 +273,7 @@ function CitationCard({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="mt-1.5 text-xs font-medium text-brand transition-colors hover:underline"
+        className="mt-1.5 text-xs font-medium text-accent-strong transition-colors hover:underline"
       >
         {open ? "Hide full page" : "Show full page"}
       </button>
