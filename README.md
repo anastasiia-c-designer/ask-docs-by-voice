@@ -1,9 +1,9 @@
-# Pagewise — ask your manual out loud
+# Pagewise - ask your manual out loud
 
 A voice-first way to ask questions about equipment manuals. You upload up to two text-based PDFs, ask a question out loud, and get a short spoken answer plus a visible quote with the file name and page it came from. If the documents do not contain the answer, the app says so instead of guessing.
 
 **Live demo:** https://ask-your-manual-app.vercel.app
-**Video walkthrough:** [link]
+**Video walkthrough:** []
 
 Open the demo and press **Try sample manuals** to start in about ten seconds with two bundled fictional manuals.
 
@@ -33,8 +33,8 @@ Answer statuses: **From the manual** (verified), **Not in the manual**, **Need o
 Requirements: Node.js 20+, pnpm, and an OpenAI API key with billing enabled (the transcription model is not available on the free tier).
 
 ```bash
-git clone [repo URL]
-cd [folder]
+git clone https://github.com/anastasiia-c-designer/ask-docs-by-voice.git
+cd ask-docs-by-voice
 pnpm install
 
 # create .env.local with:
