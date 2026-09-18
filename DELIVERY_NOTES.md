@@ -5,7 +5,7 @@ Live demo: https://ask-your-manual-app.vercel.app
 Repository: https://github.com/anastasiia-c-designer/ask-docs-by-voice
 Video : https://drive.google.com/file/d/1Us5LojwRJymrsO0ZUSInZ4OoQSSv9GY6/view?usp=sharing
 
-Time spent: **6 h 15 min**, tracked in Clockify
+Time spent: **7 h 50 min**, tracked in Clockify
 
 ## 1. What was built
 
