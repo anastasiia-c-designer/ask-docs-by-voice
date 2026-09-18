@@ -3,7 +3,7 @@
 **Pagewise - ask your manual out loud**
 Live demo: https://ask-your-manual-app.vercel.app
 Repository: https://github.com/anastasiia-c-designer/ask-docs-by-voice
-Video (under 3 min): [link]
+Video : https://drive.google.com/file/d/1Us5LojwRJymrsO0ZUSInZ4OoQSSv9GY6/view?usp=sharing
 
 Time spent: **6 h 15 min**, tracked in Clockify
 
@@ -177,6 +177,7 @@ Three examples, from smallest to most consequential.
 8. **One transcription failure, not reproduced.** The third chat in one tab returned "Transcription failed"; no request reached the server, so the failure was client-side. A fresh tab worked, and a deliberate attempt to reproduce it (four chats, switching between them) did not trigger it. Cause unknown. The app showed a clear error with "Try again" and a text fallback.
 9. **One cost row incomplete.** In one session the speech cost column was empty while speech had clearly played, so that row understates cost. Not seen in other runs; flagged in `results/final-run.md` rather than silently excluded.
 10. **Multi-step answers get truncated.** "How do I connect the router to my modem?" returned three of five steps. This follows from the rule that answers stay short enough to be spoken. See §9.
+11. **The conversation does not auto-scroll to the newest answer.** Once the thread is longer than the screen, a new answer appears below the fold and you have to scroll down manually. Found while recording the walkthrough, after the code was frozen, so it is shipped as-is rather than fixed in a rushed final change. Every chat interface does this automatically and so should this one; it is the first thing I would fix.
 
 ## 8. Limits I know about
 
@@ -200,11 +201,12 @@ Three examples, from smallest to most consequential.
 
 **What I would do next, in order.**
 
-1. **Procedures, not just facts.** Speak "this takes five steps, starting with…" and show all steps on screen with a citation for each page. This fixes the truncation in §7.10 without making every spoken answer long.
-2. **Stronger citation checking.** Verify that the quote falls under the section or model named in the question, not only that it exists on the page. This is the most important remaining correctness gap.
-3. **Merge upload into the composer.** One input with an attach icon removes a step and matches what people know from chat apps. Kept separate in v1 because the three upload validations fail before the user has spoken, which is kinder than failing after.
-4. **Auto-stop on silence.** Recordings are longer than the questions because people pause before tapping stop, and transcription cost and latency both scale with duration.
-5. **Printed page numbers** alongside file page numbers, so a citation matches the paper manual in the reader's hands.
-6. **Streaming the answer into speech** sentence by sentence, and a fallback speech provider, to cut the time to first sound further.
+1. **Fix auto-scroll** (see §7.11). Small, but it breaks the basic reading flow of the product.
+2. **Procedures, not just facts.** Speak "this takes five steps, starting with…" and show all steps on screen with a citation for each page. This fixes the truncation in §7.10 without making every spoken answer long.
+3. **Stronger citation checking.** Verify that the quote falls under the section or model named in the question, not only that it exists on the page. This is the most important remaining correctness gap.
+4. **Merge upload into the composer.** One input with an attach icon removes a step and matches what people know from chat apps. Kept separate in v1 because the three upload validations fail before the user has spoken, which is kinder than failing after.
+5. **Auto-stop on silence.** Recordings are longer than the questions because people pause before tapping stop, and transcription cost and latency both scale with duration.
+6. **Printed page numbers** alongside file page numbers, so a citation matches the paper manual in the reader's hands.
+7. **Streaming the answer into speech** sentence by sentence, and a fallback speech provider, to cut the time to first sound further.
 
 **What I would measure before building more.** Whether people trust the spoken answer enough to act on it without reading the quote. That determines whether the product needs a better viewer or a better voice.
