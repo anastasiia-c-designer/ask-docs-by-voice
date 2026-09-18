@@ -3,7 +3,7 @@
 A voice-first way to ask questions about equipment manuals. You upload up to two text-based PDFs, ask a question out loud, and get a short spoken answer plus a visible quote with the file name and page it came from. If the documents do not contain the answer, the app says so instead of guessing.
 
 **Live demo:** https://ask-your-manual-app.vercel.app
-**Video walkthrough:** []
+**Video walkthrough:** https://drive.google.com/file/d/1Us5LojwRJymrsO0ZUSInZ4OoQSSv9GY6/view?usp=sharing
 
 Open the demo and press **Try sample manuals** to start in about ten seconds with two bundled fictional manuals.
 
